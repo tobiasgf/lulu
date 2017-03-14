@@ -83,6 +83,7 @@ lulu <- function(otutable, matchlist, abundance_threshold = "min",
   # Making a separate table with stats (total readcount and spread).
   statistics_table <- otutable[, 0]
   statistics_table$total <- rowSums(otutable)
+
   # calculating spread (number of presences (samples with 1+ read) pr OTU)
   statistics_table$spread <- rowSums(otutable > 0)
   statistics_table <- statistics_table[with(statistics_table,
@@ -165,6 +166,7 @@ lulu <- function(otutable, matchlist, abundance_threshold = "min",
       cat(paste0("\n", "No parent found!", "\n"), file = log_con)
     }
   }
+
   close(log_con)
   total_abundances <- rowSums(otutable)
   curation_table <- cbind(nOTUid = statistics_table$parent_id, otutable)
@@ -195,6 +197,7 @@ lulu <- function(otutable, matchlist, abundance_threshold = "min",
                  minimum_relative_cooccurence = minimum_relative_cooccurence,
                  otu_map = statistics_table,
                  original_table = otutable)
+
   return(result)
 }
 
