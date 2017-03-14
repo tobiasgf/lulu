@@ -60,8 +60,8 @@ This algorithm \code{lulu} consumes an OTU table and a matchlist, and
   evaluates cooccurence of 'daughters' (potential analytical artefacts) and
   their 'parents' (≈ real biological species/OTUs). The algorithm requires an
   OTU table (species/site matrix), and a match list. The OTU table can be
-  made with various pipelines (VSEARCH, USEARCH, QIIME, etc.), and the
-  match-list can be made with \code{VSEARCH, USEARCH, BLASTN} or another algorithm
+  made with various r-packages (e.g. \code{DADA2}) or external pipelines (\code{VSEARCH, USEARCH, QIIME}, etc.), and the
+  match-list can be made with external bioinformatic tools like \code{VSEARCH, USEARCH, BLASTN} or another algorithm
   for pair-wise sequence matching.
 }
 \details{
@@ -71,7 +71,8 @@ This algorithm \code{lulu} consumes an OTU table and a matchlist, and
 \item{Producing the match list requires a file with all
 the OTU sequences (centroids) - e.g. \code{OTUcentroids.fasta}. The matchlist can
 be produced by mapping all OTUs against each other with an external algorithm
-like \code{VSEARCH} or \code{BLASTN}}
+like \code{VSEARCH} or \code{BLASTN}
+}
 \enumerate{
 \item \code{VSEARCH} - in VSEARCH a
 matchlist can be produced e.g. with the following command:\cr \code{vsearch

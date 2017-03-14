@@ -55,7 +55,8 @@
 #' \item{Producing the match list requires a file with all
 #' the OTU sequences (centroids) - e.g. \code{OTUcentroids.fasta}. The matchlist can
 #' be produced by mapping all OTUs against each other with an external algorithm
-#' like \code{VSEARCH} or \code{BLASTN}}
+#' like \code{VSEARCH} or \code{BLASTN}
+#' }
 #' \enumerate{
 #' \item \code{VSEARCH} - in VSEARCH a
 #' matchlist can be produced e.g. with the following command:\cr \code{vsearch
