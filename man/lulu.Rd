@@ -93,5 +93,5 @@ lulu(my_table, my_matchlist)
 lulu(my_table, my_matchlist, abundance_threshold = "avg", minimum_match = 0.8, minimum_relative_cooccurence = 0.9)
 }
 \author{
-Tobias Guldberg Frøslev
+Tobias Guldberg Frøslev.
 }
