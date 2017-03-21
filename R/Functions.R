@@ -55,8 +55,7 @@
 #' \item{Producing the match list requires a file with all
 #' the OTU sequences (centroids) - e.g. \code{OTUcentroids.fasta}. The matchlist can
 #' be produced by mapping all OTUs against each other with an external algorithm
-#' like \code{VSEARCH} or \code{BLASTN}
-#' }
+#' like \code{VSEARCH} or \code{BLASTN} }
 #' \enumerate{
 #' \item \code{VSEARCH} - in VSEARCH a
 #' matchlist can be produced e.g. with the following command:\cr \code{vsearch
@@ -72,9 +71,7 @@
 #' }
 #' }
 #' @author Tobias Guldberg Frøslev
-
-lulu <- function(otutable, matchlist, abundance_threshold = "min",
-                 minimum_match = 84, minimum_relative_cooccurence = 0.95) {
+lulu <- function(otutable, matchlist, abundance_threshold = "min", minimum_match = 84, minimum_relative_cooccurence = 0.95) {
   start.time <- Sys.time()
   colnames(matchlist) <- c("OTUid", "hit", "match")
   # remove no hits (vsearch)
