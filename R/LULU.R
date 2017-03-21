@@ -71,7 +71,7 @@
 #' -qcov_hsp_perc .90 -perc_identity .84 -query OTUcentroids.fasta}
 #' }
 #' }
-#' @author Tobias Guldberg Frøslev.
+#' @author Tobias Guldberg Frøslev
 
 lulu <- function(otutable, matchlist, abundance_threshold = "min",
                  minimum_match = 84, minimum_relative_cooccurence = 0.95) {
