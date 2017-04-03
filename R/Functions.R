@@ -55,6 +55,7 @@
 #' @author Tobias Guldberg Frøslev
 #' @export
 lulu <- function(otutable, matchlist, abundance_threshold = "min", minimum_match = 84, minimum_relative_cooccurence = 0.95) {
+  require(dplyr)
   start.time <- Sys.time()
   colnames(matchlist) <- c("OTUid", "hit", "match")
   # remove no hits (vsearch)
