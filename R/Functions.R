@@ -14,7 +14,7 @@
 #'   between the sequences of the potential parent and potential child OTUs.
 #'   \strong{NB: The matchlist is the product of a mapping of OTU sequences against each other. This is
 #'   currently carried out by an external script in e.g. Blastn or VSEARCH, prior to running lulu!}
-#' @param abundance_threshold sets whether a potential error must have lower
+#' @param minimum_ratio_type sets whether a potential error must have lower
 #'   abundance than the parent in all samples \code{min} (default), or if an error
 #'   just needs to have lower abundance on average \code{avg}. Choosing lower
 #'   abundance on average over globally lower abundance will greatly increase
@@ -22,6 +22,12 @@
 #'   possible to account for non-sufficiently clustered intraspecific variation,
 #'   but is not generally recommended, as it will also increase the potential of
 #'   cluster well-separated, but co-occuring, sequence similar species.
+#' @param minimum_ratio sets the minimim abundance ratio between a potential error
+#'   and a potential parent to be identified as an error. If the \code{minimum_ratio_type} is
+#'   set to \code{min} (default), the \code{minimum_ratio} applies to the lowest observed
+#'   ration across the samples.  If the \code{minimum_ratio_type} is
+#'   set to \code{avg} (default), the \code{minimum_ratio} applies to the mean of observed
+#'   ration across the samples.\code{avg}. (default is 1).
 #' @param minimum_match minimum threshold of sequence similarity
 #'   for considering any OTU as an error of another can be set (default 84\%).
 #' @param minimum_relative_cooccurence minimum co-occurrence rate – i.e. the
@@ -48,13 +54,13 @@
 #'   \item \code{original_table} - original OTU table. }
 #' @examples
 #' lulu(my_table, my_matchlist)
-#' lulu(my_table, my_matchlist, abundance_threshold = "avg", minimum_match = 0.8, minimum_relative_cooccurence = 0.9)
+#' lulu(my_table, my_matchlist, minimum_ratio_type = "avg", minimum_match = 0.8, minimum_relative_cooccurence = 0.9)
 #' @details The matchlist is the product of a mapping of OTU sequences against each other. This is
 #'   currently carried out by an external script in e.g. BLASTN or VSEARCH, prior to running \code{lulu}!
 #'   Producing the match list requires a file with all the OTU sequences (centroids) - e.g. \code{OTUcentroids.fasta}. The matchlist can be produced by mapping all OTUs against each other with an external algorithm like VSEARCH or BLASTN. In \code{VSEARCH} a matchlist can be produced e.g. with the following command: \code{vsearch --usearch_global OTUcentroids.fasta --db OTUcentroids.fasta --strand plus --self --id .80 --iddef 1 --userout matchlist.txt --userfields query+target+id --maxaccepts 0 --query_cov .9 --maxhits 10}. In \code{BLASTN} a matchlist can be produces e.g. with the following commands. First we produce a blast-database from the fasta file: \code{makeblastdb -in OTUcentroids.fasta -parse_seqids -dbtype nucl}, then we match the centroids against that database: \code{blastn -db OTUcentoids.fasta -num_threads 10 -outfmt'6 qseqid sseqid pident' -out matchlist.txt -qcov_hsp_perc .90 -perc_identity .84 -query OTUcentroids.fasta}
 #' @author Tobias Guldberg Frøslev
 #' @export
-lulu <- function(otutable, matchlist, abundance_threshold = "min", minimum_match = 84, minimum_relative_cooccurence = 0.95) {
+lulu <- function(otutable, matchlist, minimum_ratio_type = "min", minimum_ratio = 1, minimum_match = 84, minimum_relative_cooccurence = 0.95) {
   require(dplyr)
   start.time <- Sys.time()
   colnames(matchlist) <- c("OTUid", "hit", "match")
@@ -109,7 +115,7 @@ lulu <- function(otutable, matchlist, abundance_threshold = "min", minimum_match
                      relative_cooccurence), file = log_con)
           if (relative_cooccurence >= minimum_relative_cooccurence) {
             cat(paste0(" which is sufficient!"), file = log_con)
-            if (abundance_threshold == "avg") {
+            if (minimum_ratio_type == "avg") {
               relative_abundance <-
                 mean(otutable[line2, ][daughter_samples > 0]/
                        daughter_samples[daughter_samples > 0])
@@ -122,7 +128,7 @@ lulu <- function(otutable, matchlist, abundance_threshold = "min", minimum_match
               cat(paste0("\n", "------min avg abundance: ",
                          relative_abundance), file = log_con)
             }
-            if (relative_abundance > 1) {
+            if (relative_abundance > minimum_ratio) {
               cat(paste0(" which is OK!"), file = log_con)
               if (line2 < line) {
                 statistics_table$parent_id[line] <-
