@@ -90,7 +90,7 @@ ___
 This is the processing flow employed by the r-function:  
 1. Sort the OTUs by decreasing occurrence, secondarily by total read count.  
 2. Select one OTU at a time from top to bottom and treat them as a 'potential daughter' (erroneous OTU).  
-	- The first OTU will always be accepted as a valid OTU as it is the most widely occurring OTU with the highest read abundance.  
+  - The first OTU will always be accepted as a valid OTU as it is the most widely occurring OTU with the highest read abundance.  
 3. Select all OTUs in the match list matching the potential daughter within the dissimilarity threshold selected, and designate these as 'hits'.  
   - The dissimilarity threshold can be set to anything, but if the matchlist was produced with a minimum match %, a lower threshold will not have an effect.  
 4. Select OTUs from the 'hits' that have an occurrence at the level of the 'potential daughter' or higher, and designate these as 'potential parents'.  
