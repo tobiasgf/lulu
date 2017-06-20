@@ -4,7 +4,7 @@ A r-package for distribution based post clustering curation of amplicon data.
 
 The purpose of **LULU** is to reduce the number of erroneous OTUs in OTU tables to achieve more realistic biodiversity metrics. By evaluating the co-occurence patterns of OTUs among samples **LULU** identifies OTUs that consistently satisfy some user selected criteria for being errors of more abundant OTUs and merges these. It has been shown that curation with **LULU** consistently result in more realistic diversity metrics. The required input of **LULU** is an OTU table and a corresponding matchlist with all the internal matches of OTUs.   
 
-##Practical workflow
+## Practical workflow
 ___
 These are the steps carried out by the user to produce a curated OTU table:  
 1. Produce an OTU table and associated file with representative sequences.    
@@ -12,7 +12,7 @@ These are the steps carried out by the user to produce a curated OTU table:
 3. Run the **LULU** curation in **R** (by supplying the function with OTU table and match list).  
 4. Use the curated OTU table for further analyses.  
 
-####1. Produce an OTU table and associated file with representative sequences.    
+#### 1. Produce an OTU table and associated file with representative sequences.    
 The initial clustering can be done in **UCLUST, VSEARCH, SWARM, QIIME, DADA2**, etc. The requirements of **LULU** are that the OTU table has samples as columns and OTUs as rows, and that it has unique OTU id's as row names. A file with the representative sequences of each OTU is required to make the match list. The OTU id's has to match those of the OTU table.  
 
 *An example of an OTU table adequate for LULU*  
@@ -36,7 +36,7 @@ ATGGTAGGCGTATGC...
 GCGATGCGAT...  
 ...  
 
-####2. Produce a match list  
+#### 2. Produce a match list  
 The match list can in practice be produced with any tool for pair wise matching of sequences. **BLASTn** is an effective tool for this, and the one that was used in the validation of the **LULU** algorithm. The only requirements is that the match list has three columns with pair wise similarity scores for the OTUs. The first column contains the id of the query OTU, the second column contains the id of the matching OTU, and the third column contains the similarity score (%) of the two OTUs.  
 
 BlastN - a match list can be produced with **blastN** with these commands:  
@@ -62,7 +62,7 @@ OTU4  OTU9  0.86
 ...
 ```
 
-####3. Run the LULU curation in R
+#### 3. Run the LULU curation in R
 With the OTU table and the corresponding match list at hand, we can carry out the curation with **LULU** in **R**.
 ```
 > curated_result <- lulu(otutable_name, matchlist_name)
@@ -85,7 +85,7 @@ The lulu package can be installed in R (RStudio) using devtools, by typing these
 > install_github("tobiasgf/lulu")
 ```
 
-##The algorithm
+## The algorithm
 ___
 This is the processing flow employed by the r-function:  
 1. Sort the OTUs by decreasing occurrence, secondarily by total read count.  
