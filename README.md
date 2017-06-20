@@ -73,9 +73,8 @@ curated_result$curated_table
 ```
 This table can the be used for further biodiversity analyses, etc.  
 For more advanced uses, see the help-file for the function.  
-
 ```
->?lulu  
+>lulu  
 ```
 
 ##Installation
