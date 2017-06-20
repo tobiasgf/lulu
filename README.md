@@ -72,17 +72,18 @@ The `lulu` function will return a curated OTU table and some statistics and info
 curated_result$curated_table
 ```
 This table can the be used for further biodiversity analyses, etc.  
-For more advanced uses, see the help-file for the function.
+For more advanced uses, see the help-file for the function.  
+
 ```
->?lulu
-``
+>?lulu  
+```
 
 ##Installation
 ___
 The lulu package can be installed in R (RStudio) using devtools, by typing these commands in R
 ```
 > library(devtools)
-> install_github("tobiasgf/lulu")
+> install_github("tobiasgf/lulu")  
 ```
 
 ## The algorithm
