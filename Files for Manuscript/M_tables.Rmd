@@ -1,0 +1,238 @@
+---
+title: "I - DBOTU3 clustering of data"
+author: "Tobias G Frøslev"
+date: "11/6/2017"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width=80)
+```
+This file records the making of tables for the manuscript "Reliable biodiversity metrics from post clustering curation of amplicon data"     
+
+This part can be run after the steps documented in: A_Preparation_of_sequences.Rmd, B_clustering_with_VSEARCH_SWARM_CROP.Rmd, C_Processing_with_DADA2.Rmd, D_Taxonomic_filtering.Rmd, E_LULU_processing.Rmd, F_Calculating_statistics_for_tables.Rmd, J_dbotu3_onestep_clustering.Rmd, K_dbotu3_curation_and_singleton_culling.Rmd.    
+NB: All markdown chuncks are set to "eval=FALSE". Change these accordingly. Also code blocks to be run outside R, has been #'ed out. Change this accordingly.  
+
+###Analysis files  
+A number of files provided with this manuscript are necessary for the processing (they need to be placed in the analyses directory):  
+Table_method_statistics_benchmarking.txt, Table_method_statistics_updated_revision1.txt, Table_manteltests.txt  
+
+```{r,echo=FALSE, message=FALSE}
+setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
+main_path <- getwd() 
+path <- file.path(main_path, "otutables_processing")
+library(stringr)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(ggpmisc)
+library(cowplot)
+```
+
+# collecting data for table 1
+```{r,echo=FALSE}
+setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
+main_path <- getwd()
+path <- file.path(main_path, "otutables_processing")
+
+tab_name <- file.path(main_path,"Table_method_statistics_updated_revision1.txt")
+method_statistics_main <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+
+method_statistics_main$Level <- 
+ factor(method_statistics_main$Level,levels = c("99/100", "98.5", "98", "97", 
+                                           "96", "95"))
+method_statistics_main$Method <- 
+ factor(method_statistics_main$Method,levels = c("CROP","DADA2(+VS)","SWARM","VSEARCH"))
+method_statistics_main$Curated <- 
+ factor(method_statistics_main$Curated,levels = c("raw","xsingle","dbotu10","dbotu0","curated"))
+
+method_statistics_main <- method_statistics_main[with(method_statistics_main, order(Curated,Method,Level)),]
+
+t_method <- method_statistics_main$Method[1:20]
+t_level <- paste0(method_statistics$Level[1:20],"%")
+t_cor <- paste0(as.character(round(method_statistics_main$Correlation[1:20],2)), " / ",
+                as.character(round(method_statistics_main$Correlation[21:40],2)))
+t_taxred <- paste0(as.character(round(method_statistics_main$Redundancy[1:20]*100,0)),"% / ",
+                   as.character(round(method_statistics_main$Redundancy[21:40]*100,0)), "%")
+t_otu <- paste0(as.character(method_statistics_main$OTU_count[1:20]), " / ",
+                as.character(method_statistics_main$OTU_count[21:40]))
+t_match <- paste0(as.character(round(method_statistics_main$Mean_match[1:20],1)), "% / ",
+                as.character(round(method_statistics_main$Mean_match[21:40],1)))
+t_beta <- paste0(as.character(round(method_statistics_main$Beta[1:20],1)), " / ",
+                as.character(round(method_statistics_main$Beta[21:40],1)))
+t_inter <- paste0(as.character(round(method_statistics_main$Intercept[1:20],1)), " / ",
+                as.character(round(method_statistics_main$Intercept[21:40],1)))
+t_slope <- paste0(as.character(round(method_statistics_main$Slope[1:20],2)), " / ",
+                as.character(round(method_statistics_main$Slope[21:40],2)))
+
+main_table <- data.frame(Method=t_method, Level=t_level, Correlation=t_cor, Slope=t_slope, 
+                         Intercept=t_inter, Redundancy=t_taxred,OTUs=t_otu,Match=t_match,
+                         Betadiversity=t_beta)
+
+tab_name <- file.path(main_path,"Table1_rev1.txt")
+{write.table(main_table, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+```
+
+#Collecting data for supplementary tables 3-4
+```{r,echo=FALSE}
+setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
+main_path <- getwd()
+path <- file.path(main_path, "otutables_processing")
+allFiles <- list.files(path)
+allTabs <- allFiles[grepl("otutable$", allFiles)]
+read_tabs <- file.path(path, allTabs)
+
+samples <- c("S001","S002","S003","S004","S005","S006","S007","S008","S067",
+             "S009","S010","S011","S012","S013","S014","S040","S068","S015",
+             "S016","S017","S018","S069","S070","S019","S020","S021","S022",
+             "S024","S025","S026","S027","S041","S028","S029","S030","S032",
+             "S033","S034","S035","S042","S036","S037","S038","S039","S086",
+             "S087","S088","S089","S044","S071","S045","S046","S047","S048",
+             "S049","S050","S051","S052","S053","S055","S056","S057","S058",
+             "S090","S059","S060","S061","S062","S063","S064","S065","S066",
+             "S072","S073","S074","S075","S076","S077","S078","S091","S079",
+             "S080","S081","S082","S083","S084","S085","S092","S094","S095",
+             "S096","S097","S098","S099","S100","S101","S102","S103","S104",
+             "S106","S107","S108","S109","S133","S110","S111","S112","S113",
+             "S114","S115","S116","S117","S118","S119","S120","S121","S122",
+             "S123","S124","S134","S125","S126","S127","S129","S130","S131",
+             "S132","S135","S136","S137")
+
+readcountXX <- vector()
+for(i in seq_along(read_tabs)) {
+  tabXX <- read.csv(read_tabs[i],sep='\t',header=T,as.is=TRUE,row.names = 1)
+  tabXX <- tabXX[,samples]
+  readcountXX[i] <- sum(tabXX)
+}
+
+tab_name <- file.path(main_path,"Table_method_statistics_benchmarking.txt")
+method_statistics <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+
+method_statistics$original_readcount <- readcountXX
+
+method_statistics$Level <- 
+ factor(method_statistics$Level,levels = c("99/100", "98.5", "98", "97", 
+                                           "96", "95"))
+method_statistics$Method <- 
+ factor(method_statistics$Method,levels = c("CROP","DADA2(+VS)","SWARM","VSEARCH"))
+method_statistics$Curated <- 
+ factor(method_statistics$Curated,levels = c("raw","xsingle","dbotu10","dbotu0","curated"))
+
+method_statistics <- method_statistics[with(method_statistics, order(Curated,Method,Level)),]
+
+t_method <- method_statistics$Method[1:20]
+t_level <- paste0(method_statistics$Level[1:20],"%")
+t_cor <- paste0(as.character(round(method_statistics$Correlation[1:20],2)), "/",
+                as.character(round(method_statistics$Correlation[21:40],2)), "/",
+                as.character(round(method_statistics$Correlation[41:60],2)), "/",
+                as.character(round(method_statistics$Correlation[61:80],2)), "/",
+                as.character(round(method_statistics$Correlation[81:100],2)))
+t_taxred <- paste0(as.character(round(method_statistics$Redundancy[1:20]*100,0)),"%/",
+                   as.character(round(method_statistics$Redundancy[21:40]*100,0)), "%/",
+                   as.character(round(method_statistics$Redundancy[41:60]*100,0)), "%/",
+                   as.character(round(method_statistics$Redundancy[61:80]*100,0)), "%/",
+                   as.character(round(method_statistics$Redundancy[81:100]*100,0)), "%")
+t_otu <- paste0(as.character(method_statistics$OTU_count[1:20]), "/",
+                as.character(method_statistics$OTU_count[21:40]), "/",
+                as.character(method_statistics$OTU_count[41:60]), "/",
+                as.character(method_statistics$OTU_count[61:80]), "/",
+                as.character(method_statistics$OTU_count[81:100]))
+t_match <- paste0(as.character(round(method_statistics$Mean_match[1:20],1)), "%/",
+                as.character(round(method_statistics$Mean_match[21:40],1)), "%/",
+                as.character(round(method_statistics$Mean_match[41:60],1)), "%/",
+                as.character(round(method_statistics$Mean_match[61:80],1)), "%/",
+                as.character(round(method_statistics$Mean_match[81:100],1)),"%")
+t_beta <- paste0(as.character(round(method_statistics$Beta[1:20],1)), "/",
+                as.character(round(method_statistics$Beta[21:40],1)), "/",
+                as.character(round(method_statistics$Beta[41:60],1)), "/",
+                as.character(round(method_statistics$Beta[61:80],1)), "/",
+                as.character(round(method_statistics$Beta[81:100],1)))
+t_inter <- paste0(as.character(round(method_statistics$Intercept[1:20],1)), "/",
+                as.character(round(method_statistics$Intercept[21:40],1)), "/",
+                as.character(round(method_statistics$Intercept[41:60],1)), "/",
+                as.character(round(method_statistics$Intercept[61:80],1)), "/",
+                as.character(round(method_statistics$Intercept[81:100],1)))
+t_slope <- paste0(as.character(round(method_statistics$Slope[1:20],2)), "/",
+                as.character(round(method_statistics$Slope[21:40],2)), "/",
+                as.character(round(method_statistics$Slope[41:60],2)), "/",
+                as.character(round(method_statistics$Slope[61:80],2)), "/",
+                as.character(round(method_statistics$Slope[81:100],2)))
+
+collected_table_corresp <- data.frame(Method=t_method, Level=t_level, Correlation=t_cor, Slope=t_slope, Intercept=t_inter)
+
+tab_name <- file.path(main_path,"Table_S3_correspondence_benchmark.txt")
+{write.table(collected_table_corresp, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+collected_table_taxonstats <- data.frame(Method=t_method, Level=t_level, Total_otus=t_otu, Redundancy=t_taxred, Match=t_match,Betadiversity=t_beta)
+
+tab_name <- file.path(main_path,"Table_S4_taxonstats_benchmark.txt")
+{write.table(collected_table_taxonstats, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+collected_table_readstats <- data.frame(Method=t_method, Level=t_level, Read_count=method_statistics$original_readcount[1:20], Read_count_plant=method_statistics$Total_readcount[1:20], Readcount_ex_singletons=method_statistics$Total_readcount[21:40], Singletons=)
+
+tab_name <- file.path(main_path,"Table_S5_readstat_benchmark.txt")
+{write.table(collected_table_readstats, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+```
+
+# Collecting data on plant vs dna mantel tests (supplementary table 2)
+```{r}
+tab_name <- file.path(main_path,"Table_method_statistics_updated_revision1.txt")
+method_statistics2 <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+
+method_statistics2$Level <- 
+ factor(method_statistics2$Level,levels = c("99/100", "98.5", "98", "97", 
+                                           "96", "95"))
+method_statistics2$Method <- 
+ factor(method_statistics2$Method,levels = c("CROP","DADA2(+VS)","SWARM","VSEARCH"))
+
+method_statistics2$Curated <- 
+ factor(method_statistics2$Curated,levels = c("raw","xsingle","dbotu10","dbotu0","curated"))
+
+method_statistics2 <- method_statistics2[with(method_statistics2, order(Curated,Method,Level)),]
+
+m_mantel_com_pa <- paste0(as.character(round(method_statistics2$Com_dissim_PA_stat[1:20],2)), "/",
+                as.character(round(method_statistics2$Com_dissim_PA_stat[21:40],2)))
+
+m_mantel_com_ab <- paste0(as.character(round(method_statistics2$Com_dissim_AB_stat[1:20],2)), "/",
+                as.character(round(method_statistics2$Com_dissim_AB_stat[21:40],2)))
+
+mantel_com_table <- data.frame(Method=method_statistics2$Method[1:20],Level=paste0(method_statistics2$Level[1:20],"%"),PA_test=m_mantel_com_pa, AB_test=m_mantel_com_ab)
+
+tab_name <- file.path(main_path,"Table_S2_manteltests_plant_community.txt")
+{write.table(mantel_com_table, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+```
+
+# Collecting data on curation effect manteltests (supplementary table 1)
+```{r}
+tab_name <- file.path(main_path,"Table_manteltests.txt")
+method_statistics3 <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+
+method_statistics3$Level <- 
+ factor(method_statistics3$Level,levels = c("99/100", "98.5", "98", "97", 
+                                           "96", "95"))
+method_statistics3$Method <- 
+ factor(method_statistics3$Method,levels = c("CROP","DADA2(+VS)","SWARM","VSEARCH"))
+#method_statistics3$Curated <- 
+# factor(method_statistics3$Curated,levels = c("raw","xsingle","dbotu10","dbotu0","curated"))
+
+method_statistics3 <- method_statistics3[with(method_statistics3, order(Method,Level)),]
+method_statistics3$Level <- paste0(method_statistics3$Level,"%")
+
+method_statistics3$PA_curation <- as.character(round(method_statistics3$PA_curation,3))
+method_statistics3$AB_curation <- as.character(round(method_statistics3$AB_curation,3))
+
+mantel_table_formatted <- method_statistics3[,c(2,3,4,6)]
+
+tab_name <- file.path(main_path,"Table_S1_manteltests_curation.txt")
+{write.table(mantel_table_formatted, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+```
+ 
