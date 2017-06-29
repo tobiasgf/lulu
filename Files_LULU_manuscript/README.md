@@ -1,12 +1,12 @@
-#Notes on setup  
+# Notes on setup  
 ___
 
-This file aims to give an overview of the tools and files used for the study.
+This file aims to give an overview of the tools and files used for the study **Reliable biodiversity metrics from co-occurence based post-clustering curation of amplicon data.**    
 All steps/processes for this study can be carried out on the same computer/platform. But, in practise all analyses were carried out on a linux server setup with 64 processors (AMD Opteron(tm) 6380), except R-scripts, which were run on a MacBook Pro (2.6 GHz Intel Core i7, 16 GB 1600 MHz DDR3).
 All analyses were carried out in one directory (analyses) and sub-directories of this.
 
-#Bioinformatic tools
-CLI tools were used for this study  
+## Bioinformatic tools
+### CLI tools were used for this study  
 
  * VSEARCH v.2.02 (or later) (https://github.com/torognes/vsearch) - used for clustering in the pure VSEARCH pileine as well as the combined DADA2+VSEARCH approach.
  * Cutadapt v 1.10 (https://cutadapt.readthedocs.io/en/stable/)  - used for demultiplexing (assigning reads to samples) using two different scripts, one for VSEARCH, CROP, SWARM, and another for DADA2.
@@ -15,7 +15,7 @@ CLI tools were used for this study
  * blastn v2.4.0+ (ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/) - used for assigning taxonomy to sequences, and for making the match lists required for running LULU.  also requires installation of NCBI's taxbd - see https://www.ncbi.nlm.nih.gov/books/NBK279690/?report=reader#CmdLineAppsManual).
  * dbotu3 (https://github.com/swo/dbotu3) - used for distribution based clustering (and in this study also tested as an alternative tool for post-clustering curation).  
 
-##R-packages used for this study  
+### R-packages used for this study  
 To replicate the analyses the following packages (and their dependencies) need to be installed.  
 
  * LULU 0.1.0 - (https://github.com/tobiasgf/lulu) - the algorithm developed for this study. Used to curate the OTU tables produced by the initial clustering methods.
@@ -31,7 +31,7 @@ To replicate the analyses the following packages (and their dependencies) need t
  * devtools 1.12.0 - (https://cran.r-project.org/web/packages/devtools/) - used for installing LULU from Github.com.  
 
 
-#Provided scripts  
+### Provided scripts  
 Command line scripts  
 A number of scripts are provided with this manuscript. Place these in the /bin directory and make them executable with "chmod 755 SCRIPTNAME"" or place the scripts directly in the directory/directories where they should be executed (i.e. the analyses directory). Most of them are simple shell scripts. Their context and use is described in the R markdown (A-N) files documenting the workflow. 
 
@@ -53,7 +53,7 @@ A number of scripts are provided with this manuscript. Place these in the /bin d
  * OTU_contingency_table_simple.py - python script building the OTU tables from the SWARM analyses.
  * uc2otutab.py  (see http://drive5.com/python/summary.html) - a python script used for making the OTU tables in several pipelines/approaches.
 
-##R-markdown files  
+### R-markdown files  
 This manuscript includes 9 R markdown files (including this one) documenting the analyses.  
 
  * A_Preparation_of_sequences.Rmd
@@ -72,7 +72,7 @@ This manuscript includes 9 R markdown files (including this one) documenting the
  * N_Producing_supplementary_figures_13.Rmd
  * X_setup_notes.Rmd - (this file)  
 
-#Data/Files
+## Data/Files
 A number of files and data provided with this manuscript are necessary for the processing (they need to be placed in the analyses directory):
 Files used by Alfa_demultiplex_universal.sh script.
 batchfile.list  - file with library information for demultiplexing the R1/R2 fastq paired end files. Using the files with info on primer-tag combinations used for the different samples in the different libraries.
