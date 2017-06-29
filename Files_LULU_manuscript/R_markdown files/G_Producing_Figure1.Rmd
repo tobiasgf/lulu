@@ -1,0 +1,207 @@
+---
+title: "G - Producing Figure 1"
+author: "Tobias G Frøslev"
+date: "11/5/2017" # Updated 28/6/2017
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This file records the graphical visualisation of the table metrics for the manuscript "Reliable biodiversity metrics from co-occurence based post-clustering curation of amplicon data".  
+
+This step should be carried out after the calculation of table metrics/statistics documented in the file: F_Calculating_statistics_for_tables.Rmd   
+
+NB: All markdown chuncks are set to "eval=FALSE". Change these accordingly. Also code blocks to be run outside R, has been #'ed out. Change this accordingly. 
+
+Setting directories and libraries etc
+```{r, eval=FALSE}
+setwd("~/analyses")
+setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
+main_path <- getwd() 
+path <- file.path(main_path, "otutables_processing")
+library(stringr)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(ggpmisc)
+library(cowplot)
+```
+
+Make display dotplots of plant richness vs OTU richness
+```{r,eval=FALSE}
+tab_name <- file.path(main_path,"Table_richness_calculations_long.txt")
+total_richness_df2 <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+total_richness_df2$Level <- 
+ factor(total_richness_df2$Level,levels = c("99/100", "98.5", "98", "97", 
+                                            "96", "95"))
+total_richness_df2$Method <- 
+ factor(total_richness_df2$Method,levels = c("VSEARCH", "SWARM", "DADA2(+VS)", 
+                                             "CROP"))
+total_richness_df2$Curated <- 
+ factor(total_richness_df2$Curated,levels = c("raw", "curated"))
+
+formula <- y ~ x
+
+#Extract 97% level
+level97 <- total_richness_df2 %>% filter(Level == "97")
+Plot97_xy <- ggplot(level97, aes(x= Obs, y= OTU, color = Curated)) +
+  geom_point(pch=21,size=1, alpha = 0.8) +
+  geom_abline(intercept = 0, linetype =2) +
+  facet_grid(. ~Method) +
+  geom_smooth(method = "lm", se = F,size=0.5) +
+  stat_poly_eq(geom = "label", alpha = 0.5,
+               aes(label = paste(..eq.label.., ..rr.label..,sep = "~~~")),
+               formula = formula, label.x.npc = "left", label.y.npc = 0.9,
+               parse = TRUE, size = 2, label.size = NA) +
+  scale_color_brewer(palette = "Set1") +
+  xlab("Plant richness") +
+  ylab("OTU richness") +
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw()+
+  theme(text = element_text(size=7)) + 
+  guides(colour = guide_legend(title="")) + 
+  theme(legend.position = c(0.83, 0.6))
+```
+
+Make plots of method related statistics
+```{r,eval=FALSE}
+tab_name <- file.path(main_path,"Table_method_statistics.txt")
+method_statistics <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+method_statistics$Level <- 
+ factor(method_statistics$Level,levels = c("99/100", "98.5", "98", "97", 
+                                           "96", "95"))
+method_statistics$Method <- 
+ factor(method_statistics$Method,levels = c("VSEARCH", "SWARM", "DADA2(+VS)", 
+                                            "CROP"))
+method_statistics$Curated <- 
+ factor(method_statistics$Curated,levels = c("raw", "curated"))
+
+#Get beta diversity of plant survey
+tab_name <- file.path(main_path,"Table_plants_2014_cleaned.txt")
+Plant_data2014 <- read.table(tab_name, sep="\t", row.names = 1, header=TRUE, 
+                             as.is=TRUE)
+Plant_richness <- colSums(Plant_data2014)
+obs_beta <- nrow(Plant_data2014)/mean(Plant_richness)
+
+#Extract 97% Level methods
+Level97m <- method_statistics %>% filter(Level == "97")
+
+#Plot OTU count at 97%
+Plot97_otucount <- ggplot(Level97m,aes(x=Curated,weights=OTU_count,fill=Curated)) +
+  geom_bar(position="dodge",width=.5) + 
+  geom_hline(yintercept = 564,linetype = 2) +
+  facet_grid(.~Method) +
+  xlab("") +
+  ylab("OTUs") +
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw()+
+  theme(strip.background = element_blank(), strip.text.x = element_blank())+ 
+  theme(text = element_text(size=7))
+
+#Plot taxonomic redundancy at 97%
+Plot97_taxred <-  ggplot(Level97m,aes(x=Curated,weights=Redundancy,fill=Curated)) +
+  geom_bar(position="dodge",width=.5) + 
+  facet_grid(.~Method) +
+  xlab("") +
+  ylab("Redundancy") +
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw()+
+  theme(strip.background = element_blank(), strip.text.x = element_blank())+ 
+  scale_y_continuous(labels = scales::percent)  + 
+  theme(text = element_text(size=7))
+
+#Plot beta diversity at 97%
+Plot97_beta <- ggplot(Level97m,aes(x=Curated,weights=Beta,fill=Curated)) +
+  geom_bar(position="dodge",width=.5) + 
+  geom_hline(yintercept = obs_beta,linetype = 2) +
+  facet_grid(.~Method) +
+  xlab("") +
+  ylab("Betadiversity") +
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw()+
+  theme(strip.background = element_blank(), strip.text.x = element_blank()) + 
+  theme(text = element_text(size=7))
+
+```
+
+Process the match rates (pident, best match on genbank) for curated vs. discarded OTUs for processed tables, and make display violin plots
+```{r,eval=FALSE}
+tab_name <- file.path(main_path,"Table_OTU_match_rates.txt")
+pident_frame <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+
+pident_frame$level_pident <- 
+ factor(pident_frame$level_pident,levels = c("99/100", "98.5", "98", "97", 
+                                             "96", "95"))
+pident_frame$method_pident <- 
+ factor(pident_frame$method_pident,levels = c("VSEARCH", "SWARM", 
+                                              "DADA2(+VS)", "CROP"))
+
+#Get 97% level for all methods
+Level97p <- pident_frame %>% filter(level_pident == "97")
+
+#Violin plot of distribution of best matches, 97% level
+Plot97_pident_violin <- 
+ ggplot(Level97p, aes(x=retained_or_discarded, 
+                      y=pident/100,fill=retained_or_discarded)) +
+  geom_violin() +
+  facet_grid(.~method_pident) +
+  xlab("") +
+  ylab("Reference match") +
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw() +
+  scale_y_continuous(labels = scales::percent) +
+  theme(strip.background = element_blank(), strip.text.x = element_blank()) +
+  theme(text = element_text(size=7)) + 
+  guides(fill=guide_legend(title="OTUs"))
+```
+
+Make display taxonomic dissimilarity plots
+```{r, eval=FALSE}
+tab_name <- file.path(main_path,"Table_taxonomic_dissimilatiry_long.txt")
+gathered_dissimilarity_long <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+
+gathered_dissimilarity2 <- 
+ spread(gathered_dissimilarity_long,Curated,Dissimilarity)
+gathered_dissimilarity2$Level <- 
+ factor(gathered_dissimilarity2$Level,levels = c("99/100", "98.5", "98", "97", 
+                                                 "96", "95"))
+gathered_dissimilarity2$Method <- 
+ factor(gathered_dissimilarity2$Method,levels = c("VSEARCH", "SWARM", 
+                                                  "DADA2(+VS)", "CROP"))
+
+
+Level97d <- gathered_dissimilarity2 %>% filter(Level == "97")
+Plot97_dissim <- ggplot(Level97d,aes(x=raw,y=curated)) +
+  geom_point(size=1,alpha=0.8,pch=21) + 
+  facet_grid(. ~Method) +
+  geom_abline(intercept = 0, linetype =2) + 
+  xlab("Taxonomic dissimilarity before curation") +
+  ylab("after") +
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw() +
+  theme(strip.background = element_blank(), strip.text.x = element_blank()) +
+  theme(text = element_text(size=7))
+```
+
+Make composite plot (Figure 1) for 97% level
+```{r,eval=FALSE}
+p1 <- Plot97_xy
+p2 <- Plot97_otucount + theme(legend.position="none")
+p3 <- Plot97_taxred + theme(legend.position="none")
+p4 <- Plot97_beta + theme(legend.position="none")
+p5 <- Plot97_pident_violin + theme(legend.position="none")
+p6 <- Plot97_dissim + theme(legend.position="none")
+
+Composite_plot <- plot_grid(p1,p2,p3,p4,p5,p6, align = "v", 
+                            nrow = 6, ncol=1, rel_heights = c(5.5, 2, 2, 2, 3,2),
+                            labels = c("a","b","c","d","e","f"))
+
+ggsave("Fig1_rev1.pdf", Composite_plot, width=6, height=11)
+
+```
+

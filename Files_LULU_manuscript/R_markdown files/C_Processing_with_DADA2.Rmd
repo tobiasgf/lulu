@@ -1,0 +1,345 @@
+---
+title: "C - Processing with DADA2"
+author: "Tobias G Frøslev"
+date: "11/5/2017" #Updated 28/6/2017
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This file records the demultiplexing and "clustering" of sequence data for the manuscript "Reliable biodiversity metrics from co-occurence based post-clustering curation of amplicon data" using the DADA2 algorithm. DADA2 requires samplewise libraries - i.e. one pair of fastq files pr sample where reads do not include primers or barcode/tag. As our laboratory methods rely on multiplexing of several samlples in each library we had to construct a script for demultiplexing without merging. Also, DADA2 relies on separate processing of forward and reverse reads. Our multiplexing method relies on annealing of adapters to amplicon pools, which means that half of the reads will be inserted in reverse direction. DADA2 is based on the distribution of errors, and as the distribution of errors cannot be assume to be identical between R1 and R2 reads, we chose to process the antisense and sense reads separately, and merge the results in the end.
+We assume that the pure DADA2 approach will accept sub-specific  and intragenomic types of ITS sequences, and thus an inflation of the richness compared to species level inventories. So we also extract the reads and do a subsequent clustering using a modified version of the VSEARCH pipeline, clustering at 98.5%, 98%, 97% and 95%.  
+
+This part should be run after the initial merging and demultiplexing of samples, documented in: A_Preparation_of_sequences.Rmd  
+NB: All markdown chuncks are set to "eval=FALSE". Change these accordingly. Also code blocks to be run outside R, has been #'ed out. Change this accordingly.  
+
+# DADA2 processing of plant data
+### Bioinformatic tools necessary
+Make sure that you have the following bioinformatic tools in your PATH  
+VSEARCH v.2.32 or later (https://github.com/torognes/vsearch)  
+CUTADAPT (https://cutadapt.readthedocs.io/en/stable/)  
+DADA2 package for r (https://github.com/benjjneb/dada2)  
+
+###Provided scripts  
+A number of scripts are provided with this manuscript. Place these in you /bin directory and make them executable with "chmod 755 SCRIPTNAME"" or place the scripts in the directory/directories where they should be executed (i.e. the analyses directory)  
+Demultiplex_for_DADA2.sh  
+Alfa_DADA2_vsearch.sh
+Alfa_concatenate_single_samples_fastq_DADA2.sh  
+And the r code below for the actual DADA2 processing  
+
+###Analysis files  
+A number of files provided with this manuscript are necessary for the processing (they need to be placed in the analyses directory): The first script parses the unzipped outputfiles from the MiSeq, and makes them ready for the DADA2 pipeline.  It uses a set of files with tagging information. These need to be placed in the analyses directory: DADA2_tags_R1A.list, DADA2_tags_R1B.list, DADA2_tags_R2A.list, DADA2_tags_R2B.list, DADA2_tags_R3A.list, DADA2_tags_R3B.list.
+
+###Run the demultiplexing  
+The script identifies reads originating from different samples from combination of tag and primer sequence. Tag and primer is cut from the sequence during demultiplexing. The script will produce 130 paired files of R1 and R2 in each of two directories - one directory where the amplicons have the forward primer in the R1 file and the reverse primer in the R2 file file, and aother directory for the opposite case. Primers and tags are exciced from the reads during demultiplexing, also revere complementary remains of 3' primers, so we only have the pure amplicon region left. files are kept in the fastq format.  
+```{r, eval=FALSE}
+# bash ~/data/Biowide/scripts/DADA2_demultiplex_tail_trim.sh
+```
+Now the sequences have been assigned to samples and are ready for further processing!
+
+###Merge the three replicates
+We are not interested in the informmation from separate PCRs in these analyses, and hence we pool all files belonging to the same sample. This script will put all the single replicates in a new directory, and make a new concatenated file for each sample in the analyses directory. 
+```{r, eval=FALSE}
+# Alfa_concatenate_single_samples_fastq_DADA2.sh
+```
+Now we have a directory with "sense" reads and a directory with "anti-sense" reads. Both directories contain 130 pairs of R1/R2 fastq files.  
+
+###Matching of reads
+DADA2 is used to make sure that the pairwise R1/R2 files only contain matching pairs. The script is based on the discussion on GitHub: https://github.com/benjjneb/dada2/issues/132#issuecomment-255050128.  
+load packages and paths:
+```{r, eval=FALSE}
+library("dada2")
+# change these two paths to the directory where the analyses are carried out
+setwd("~/analyses")
+main_path <- "~/analyses" 
+```
+
+Matching the "Sense"-reads.
+```{r, eval=FALSE}
+path <- file.path(main_path, "DADA2_SS")
+fns <- list.files(path)
+fastqs <- fns[grepl("fastq$", fns)]
+fastqs <- sort(fastqs)
+fnFs <- fastqs[grepl("_R1.", fastqs)]
+fnRs <- fastqs[grepl("_R2.", fastqs)]
+sample.names <- sapply(strsplit(fnFs, "_"), `[`, 1)
+fnFs <- file.path(path, fnFs)
+fnRs <- file.path(path, fnRs)
+match_path <- file.path(path, "matched")
+if(!file_test("-d", match_path)) dir.create(match_path)
+filtFs <- file.path(match_path, paste0(sample.names, "_F_matched.fastq.gz"))
+filtRs <- file.path(match_path, paste0(sample.names, "_R_matched.fastq.gz"))
+for(i in seq_along(fnFs)) {
+  fastqPairedFilter(c(fnFs[i], fnRs[i]), c(filtFs[i], filtRs[i]),
+                    matchIDs=TRUE)
+}
+```
+
+Matching the "Anti-Sense"-reads.
+```{r, eval=FALSE}
+path <- file.path(main_path, "DADA2_AS")
+fns <- list.files(path)
+fastqs <- fns[grepl("fastq$", fns)]
+fastqs <- sort(fastqs)
+fnFs <- fastqs[grepl("_R2.", fastqs)] # Reverse direction compared to above for
+#the "sense reads". In practice the reads are here complement reversed to be in
+#the same orientation as the "sense" reads.
+fnRs <- fastqs[grepl("_R1.", fastqs)] # See above
+sample.names <- sapply(strsplit(fnFs, "_"), `[`, 1)
+fnFs <- file.path(path, fnFs)
+fnRs <- file.path(path, fnRs)
+match_path <- file.path(path, "matched")
+if(!file_test("-d", match_path)) dir.create(match_path)
+filtFs <- file.path(match_path, paste0(sample.names, "_F_matched.fastq.gz"))
+filtRs <- file.path(match_path, paste0(sample.names, "_R_matched.fastq.gz"))
+for(i in seq_along(fnFs)) {
+  fastqPairedFilter(c(fnFs[i], fnRs[i]), c(filtFs[i], filtRs[i]),
+                    matchIDs=TRUE)
+}
+```
+
+###Filtering of the reads.
+Filtering of the matched reads. Using DADA2 the paired reads are now filtered (maximum expected errors 2, maximum number of N's (0), truncate length at 215 for R1, and 205 for R2).  
+filtering of the Sense-reads:
+```{r, eval=FALSE}
+path <- file.path(main_path, "DADA2_SS/matched") 
+fns <- list.files(path)
+fastqs <- fns[grepl("matched.fastq", fns)]
+fastqs <- sort(fastqs)
+fnFs <- fastqs[grepl("_F_", fastqs)]
+fnRs <- fastqs[grepl("_R_", fastqs)]
+sample.names <- sapply(strsplit(fnFs, "_"), `[`, 1)
+fnFs <- file.path(path, fnFs)
+fnRs <- file.path(path, fnRs)
+filt_path <- file.path(path, "filtered")
+if(!file_test("-d", filt_path)) dir.create(filt_path)
+filtFs <- file.path(filt_path, paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path(filt_path, paste0(sample.names, "_R_filt.fastq.gz"))
+for(i in seq_along(fnFs)) {
+  fastqPairedFilter(c(fnFs[i], fnRs[i]), c(filtFs[i], filtRs[i]),
+                    minLen=10, maxN=0, maxEE=2, truncQ=2, 
+                    compress=TRUE, verbose=TRUE)
+}
+```
+
+Filtering of the Anti-Sense-reads.
+```{r, eval=FALSE}
+path <- file.path(main_path, "DADA2_AS/matched") 
+fns <- list.files(path)
+fastqs <- fns[grepl("matched.fastq", fns)]
+fastqs <- sort(fastqs)
+fnFs <- fastqs[grepl("_F_", fastqs)]
+fnRs <- fastqs[grepl("_R_", fastqs)]
+sample.names <- sapply(strsplit(fnFs, "_"), `[`, 1)
+fnFs <- file.path(path, fnFs)
+fnRs <- file.path(path, fnRs)
+filt_path <- file.path(path, "filtered")
+if(!file_test("-d", filt_path)) dir.create(filt_path)
+filtFs <- file.path(filt_path, paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path(filt_path, paste0(sample.names, "_R_filt.fastq.gz"))
+for(i in seq_along(fnFs)) {
+  fastqPairedFilter(c(fnFs[i], fnRs[i]), c(filtFs[i], filtRs[i]), 
+                    minLen=10, maxN=0, maxEE=2, truncQ=2, 
+                    compress=TRUE, verbose=TRUE)
+}
+```
+Now the reads are ready for the processing with DADA2.
+
+###DADA2 processing of the reads.
+Processing the set of files containing the forward primer in the R1 reads (the sense reads):
+```{r, eval=FALSE}
+filt_path <- file.path(main_path, "DADA2_SS/matched/filtered") 
+fns <- list.files(filt_path)
+fastqs <- fns[grepl(".fastq.gz", fns)]
+fastqs <- sort(fastqs)
+fnFs <- fastqs[grepl("_F_", fastqs)]
+fnRs <- fastqs[grepl("_R_", fastqs)]
+sample.names <- sapply(strsplit(fnFs, "_"), `[`, 1)
+filtFs <- file.path(filt_path, fnFs)
+filtRs <- file.path(filt_path, fnRs)
+derepFs <- derepFastq(filtFs, verbose=TRUE)
+derepRs <- derepFastq(filtRs, verbose=TRUE)
+names(derepFs) <- sample.names
+names(derepRs) <- sample.names
+dadaFs <- dada(derepFs, err=NULL, selfConsist = TRUE)
+dadaRs <- dada(derepRs, err=NULL, selfConsist = TRUE)
+mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs, verbose=TRUE,minOverlap = 5)
+seqtab_SS <- makeSequenceTable(mergers[names(mergers)])
+seqtab.nochim_SS <- removeBimeraDenovo(seqtab_SS, verbose=TRUE)
+stSS <- file.path(main_path,"seqtab_SS")
+stnsSS <- file.path(main_path,"seqtab.nochim_SS")
+saveRDS(seqtab_SS,stSS)
+saveRDS(seqtab.nochim_SS,stnsSS)
+```
+
+Then DADA2 processing of "the antisense" reads:
+```{r, eval=FALSE}
+filt_path <- file.path(main_path, "DADA2_AS/matched/filtered") 
+fns <- list.files(filt_path)
+fastqs <- fns[grepl(".fastq.gz", fns)]
+fastqs <- sort(fastqs)
+fnFs <- fastqs[grepl("_F_", fastqs)]
+fnRs <- fastqs[grepl("_R_", fastqs)]
+sample.names <- sapply(strsplit(fnFs, "_"), `[`, 1)
+filtFs <- file.path(filt_path, fnFs)
+filtRs <- file.path(filt_path, fnRs)
+derepFs <- derepFastq(filtFs, verbose=TRUE)
+derepRs <- derepFastq(filtRs, verbose=TRUE)
+names(derepFs) <- sample.names
+names(derepRs) <- sample.names
+dadaFs <- dada(derepFs, err=NULL, selfConsist = TRUE)
+dadaRs <- dada(derepRs, err=NULL, selfConsist = TRUE)
+mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs, verbose=TRUE,minOverlap = 5)
+seqtab_AS <- makeSequenceTable(mergers[names(mergers)])
+seqtab.nochim_AS <- removeBimeraDenovo(seqtab_AS, verbose=TRUE)
+stAS <- file.path(main_path,"seqtab_AS")
+stnsAS <- file.path(main_path,"seqtab.nochim_AS")
+saveRDS(seqtab_AS,stAS)
+saveRDS(seqtab.nochim_AS,stnsAS)
+```
+
+###Merging the resulting tables of the "sense" and the "antisense" analyses
+Define a function for combining two or more tables, collapsing samples with similar names:  
+(see https://github.com/benjjneb/dada2/issues/132)
+```{r, eval=FALSE}
+sumSequenceTables <- function(table1, table2, ..., orderBy = "abundance") {
+  # Combine passed tables into a list
+  tables <- list(table1, table2)
+  tables <- c(tables, list(...))
+  # Validate tables
+  if(!(all(sapply(tables, dada2:::is.sequence.table)))) {
+    stop("At least two valid sequence tables, and no invalid objects, are expected.")
+  }
+  sample.names <- rownames(tables[[1]])
+  for(i in seq(2, length(tables))) {
+    sample.names <- c(sample.names, rownames(tables[[i]]))
+  }
+  seqs <- unique(c(sapply(tables, colnames), recursive=TRUE))
+  sams <- unique(sample.names)
+  # Make merged table
+  rval <- matrix(0L, nrow=length(sams), ncol=length(seqs))
+  rownames(rval) <- sams
+  colnames(rval) <- seqs
+  for(tab in tables) {
+    rval[rownames(tab), colnames(tab)] <- rval[rownames(tab), colnames(tab)] + tab
+  }
+  # Order columns
+  if(!is.null(orderBy)) {
+    if(orderBy == "abundance") {
+      rval <- rval[,order(colSums(rval), decreasing=TRUE),drop=FALSE]
+    } else if(orderBy == "nsamples") {
+      rval <- rval[,order(colSums(rval>0), decreasing=TRUE),drop=FALSE]
+    }
+  }
+  rval
+}
+```
+
+Using the function to merge the results (on both the full table and the version without chimeras)
+```{r, eval=FALSE}
+stAS <- file.path(main_path,"seqtab_AS")
+stnsAS <- file.path(main_path,"seqtab.nochim_AS")
+stSS <- file.path(main_path,"seqtab_SS")
+stnsSS <- file.path(main_path,"seqtab.nochim_SS")
+seqtab.nochim_AS <- readRDS(stnsAS)
+seqtab.nochim_SS <- readRDS(stnsSS)
+seqtab_AS <- readRDS(stAS)
+seqtab_SS <- readRDS(stSS)
+Plant_sumtable <- sumSequenceTables(seqtab_SS,seqtab_AS)
+Plant_nochim_sumtable <- sumSequenceTables(seqtab.nochim_SS,seqtab.nochim_AS)
+stBoth <- file.path(main_path,"seqtab_Both")
+stnsBoth <- file.path(main_path,"seqtab.nochim_Both")
+saveRDS(Plant_sumtable,stBoth)
+saveRDS(Plant_nochim_sumtable,stnsBoth)
+```
+Now the DADA2 algorithm is finished, but we need to get the resulting table in a format that is comparable to the other pipelines...
+
+###Reformat DADA2 table and centroids
+Transpose table, assign names, extract sequences and save table, for further processing:
+```{r, eval=FALSE}
+trasPlant_nochim_sumtable <- as.data.frame(t(Plant_nochim_sumtable))
+#Get DNA sequences
+sequences <- row.names(trasPlant_nochim_sumtable)
+#Assign new rownames
+row.names(trasPlant_nochim_sumtable) <- 
+ paste0("seq",seq.int(nrow(trasPlant_nochim_sumtable)))
+tbname <- file.path(main_path,"DADA2_raw.table")
+{write.table(trasPlant_nochim_sumtable,tbname,sep="\t",col.names = NA, 
+             quote=FALSE)}
+#Extract OTUs (sequences)
+sinkname <- file.path(main_path,"DADA2_raw.otus")
+{
+  sink(sinkname)
+  for (seqX in seq.int(nrow(trasPlant_nochim_sumtable))) {
+    header <- paste0(">","seq",seqX,"\n")
+    cat(header)
+    seqq <- paste0(sequences[seqX],"\n")
+    cat(seqq)
+  }
+  sink()
+}
+```
+
+Reformat the table and centroids to contain the same sha1 name for each OTU as used in the other pipelines (using the filtering of VSEARCH):
+```{r, eval=FALSE}
+# vsearch --fastx_filter DADA2_raw.otus --relabel_sha1 --fastaout DADA2_NO.centroids
+# echo "OTUId" > DADA2_sha1_labels
+# grep ">" DADA2_NO.centroids | sed 's/>//' >> DADA2_sha1_labels
+# cut -d$'\t' --complement -s -f1 DADA2_raw.table > DADA2_NO_row_id.txt
+# paste DADA2_sha1_labels DADA2_NO_row_id.txt > DADA2_NO.otutable
+```
+Now we have a pure DADA2 table (and centroid file) for comparison with the other pipelines. We assume that the pure DADA2 approach will accept sub-specific  and intragenomic types of ITS sequences, and thus an infaltion of the richness compared to species level inventories. So we extract the reads and do a subsequent clustering (using a modified version of the vsearch pipeline).  
+
+###Extraction of sample wise reads and abundance-information
+As we assume that DADA2 will identify intraspecific variants of the marker gene, we extract the reads and information sample wise to be able to process the results with other clustering tools (here using a modified version of the VSEARCH pipeline).  
+
+Define a function to extract sequences sample wise and add size annotation (for processing in VSEARCH). Processed files will be placed on a number of fastafiles in a directory "DADA2_extracted_samples":
+```{r, eval=FALSE}
+extrSamDADA2 <- function(my_table) {
+  out_path <- file.path(main_path, "DADA2_extracted_samples")
+  if(!file_test("-d", out_path)) dir.create(out_path)
+  for (sampleX in seq(1:dim(my_table)[1])){
+    sinkname <- file.path(out_path, paste0(rownames(my_table)[sampleX],".fas"))
+    {
+      sink(sinkname)
+      for (seqX in seq(1:dim(my_table)[2])) {
+        if (my_table[sampleX,seqX] > 0) {
+          header <- paste0(">",rownames(my_table)[sampleX],";size=",
+                           my_table[sampleX,seqX],";","\n")
+          cat(header)
+          seqq <- paste0(colnames(my_table)[seqX],"\n")
+          cat(seqq)
+        }
+      }
+      sink()
+    }
+  }
+}
+```
+
+Extract samplewise sequences from the non-chimera table using the above function:
+```{r, eval=FALSE}
+extrSamDADA2(Plant_nochim_sumtable)
+```
+
+Add sha1 labels to the headers of the fasta sequences and save in new directory "relabelled"
+```{r, eval=FALSE}
+# cd DADA2_extracted_samples
+# mkdir -p relabelled
+# for f in S[0-9][0-9][0-9].fas; do vsearch --fastx_filter "$f" --relabel_sha1 
+#            --fastaout relabelled/$f --sizein --sizeout --fasta_width 0; done
+```
+
+Run the VSEARCH clustering on the extracted DADA2 reads  
+```{r, eval=FALSE}
+# cd relabelled
+# Alfa_DADA2_vsearch.sh
+```
+Now OTU tables and centroid files (as well as uclust files, uc) are present in  
+"~/analyses/DADA2_extracted_samples/relabelled/VSEARCH_PIPE/".   
+

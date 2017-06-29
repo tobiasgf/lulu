@@ -1,0 +1,86 @@
+---
+title: "B - Clustering with VSEARSH, SWARM and CROP"
+author: "Tobias G Frøslev"
+date: "11/5/2017" # updated 28/6/2017
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+This file records the clustering of sequence data for the manuscript "Reliable biodiversity metrics from co-occurence based post-clustering curation of amplicon data" using three different approaches: VSEARCH (single-pass, greedy star-clustering algorithm) similar to that which can be performed with USEARCH, SWARM (single linkage clustering) and CROP (unsupervised Bayesian clustering). Each algoritm is employed at several clustering levels. VSEARCH was used to cluster at 98.5%, 98%, 97% and 95% similarity, SWARM  was used to cluster with nucleotide differences of d=3, d=5, d=7, d=10, d=13 and d=15. CROP was used at levels more or less corresponding to 2%, 3% and 5% dissimilarity (i.e. 98%, 97% and 95% similarity) with settings "l=0.5 u=1.0", "-s" and "-g" respectively.  
+
+This part should be run after the initial merging and demultiplexing of samples, documented in: A_Preparation_of_sequences.Rmd  
+NB: All markdown chuncks are set to "eval=FALSE". Change these accordingly. Also code blocks to be run outside R, has been #'ed out. Change this accordingly.  
+
+## VSEARCH clustering of plant data
+### Bioinformatic tools necessary
+Make sure that you have the following bioinformatic tools in your PATH  
+VSEARCH v.2.32 or later (https://github.com/torognes/vsearch)  
+uc2otutab.py  (see http://drive5.com/python/summary.html)
+
+###Provided scripts  
+A number of scripts are provided with this manuscript. Place these in you /bin directory and make them executable with "chmod 755 SCRIPTNAME"" or place the scripts in the directory/directories where they should be executed (i.e. the analyses directory)  
+Alfa_vsearch.sh  
+rename.pl  
+  
+###Analysis files  
+A number of files provided with this manuscript are necessary for the processing (they need to be placed in the analyses directory): This script parses the dereplicated sample wise fastafiles produced by the previous step (see Preparation_of_sequences.Rmd)  
+
+###Run the clustering script.  
+Cluster samples at different levels and produce OTU tables and centroid files (files with representative sequences for each OTU)
+```{r, eval=FALSE}
+# Alfa_vsearch.sh
+```
+Now OTU tables and centroid files (as well as uclust files, uc) are present in the ~/analyses/VSEARCH_PIPE/ directory
+
+
+## SWARM clustering of plant data
+### Bioinformatic tools necessary
+Make sure that you have the following bioinformatic tools in your PATH  
+SWARM  v.2.19 or later (https://github.com/torognes/swarm)  
+
+###Provided scripts  
+A number of scripts are provided with this manuscript. Place these in you /bin directory and make them executable with "chmod 755 SCRIPTNAME"" or place the scripts in the directory/directories where they should be executed (i.e. the analyses directory)  
+Alfa_swarm.sh  
+buildOTUtable_simple.sh  
+OTU_contingency_table_simple.py  
+  
+###Analysis files  
+A number of files provided with this manuscript are necessary for the processing (they need to be placed in the analyses directory): This script parses the dereplicated sample wise fastafiles produced by the previous step (see Preparation_of_sequences.Rmd)  
+
+###Run the clustering script.  
+Cluster samples at different levels and produce OTU tables and centroid files (files with representative sequences for each OTU)
+```{r, eval=FALSE}
+# Alfa_swarm.sh
+```
+Now OTU tables and centroid files (and uchime, swarms, struct, stats) are present in the ~/analyses/SWARM_PIPE/ directory
+
+## CROP clustering of plant data
+### Bioinformatic tools necessary
+Make sure that you have the following bioinformatic tools in your PATH  
+CROP v 1.33 or later (see https://github.com/tingchenlab/CROP)  
+VSEARCH v.2.02 or later (https://github.com/torognes/vsearch)  
+uc2otutab.py  (see http://drive5.com/python/summary.html)  
+
+###Provided scripts  
+A number of scripts are provided with this manuscript. Place these in you /bin directory and make them executable with "chmod 755 SCRIPTNAME"" or place the scripts in the directory/directories where they should be executed (i.e. the analyses directory)  
+Alfa_CROP95.sh  
+Alfa_CROP97.sh  
+Alfa_CROP98.sh  
+
+###Analysis files  
+A number of files provided with this manuscript are necessary for the processing (they need to be placed in the analyses directory): This script parses the dereplicated sample wise fastafiles produced by the previous step (see Preparation_of_sequences.Rmd)  
+
+###Run the clustering script  
+Cluster samples at different levels and produce OTU tables and centroid files (files with representative sequences for each OTU). The analyses are rather time consuming. The settings of CROP are adjusted to fit the amount of unique sequences and the average length of the reads according to suggestions in the user manual. Vsearch is used to map the reads against the OTUs defined by crop (with 95%, 97% and 98% similarity respectively).  
+```{r, eval=FALSE}
+# Alfa_CROP95.sh
+# Alfa_CROP97.sh
+# Alfa_CROP98.sh
+```
+Now OTU tables and centroid files (and uclust file, uc) are present in the ~/analyses/CROP95_PIPE/, the ~/analyses/CROP97_PIPE/ and the ~/analyses/CROP98_PIPE/ directories respectively.  
+

@@ -1,0 +1,537 @@
+---
+title: "J - DBOTU3 one-step clustering"
+author: "Tobias G Frøslev"
+date: "11/6/2017"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width=80)
+```
+This file records the clustering of sequence data for the manuscript "Reliable biodiversity metrics from co-occurence based post-clustering curation of amplicon data" using dbotu3. First a 0% (100%) OTU table is produced with VSEARCH.    
+
+This part can be run after the initial merging and demultiplexing of samples, documented in: A_Preparation_of_sequences.Rmd  
+NB: All markdown chuncks are set to "eval=FALSE". Change these accordingly. Also code blocks to be run outside R, has been #'ed out. Change this accordingly.  
+
+## VSEARCH clustering of plant data
+### Bioinformatic tools necessary
+Make sure that you have the following bioinformatic tools in your PATH  
+VSEARCH v.2.32 or later (https://github.com/torognes/vsearch)  
+uc2otutab.py  (see http://drive5.com/python/summary.html)  
+dbotu3 (https://github.com/swo/dbotu3)  
+BlastN - blastn v2.4.0+ (ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/)  
+
+###Provided scripts  
+A number of scripts are provided with this manuscript. Place these in you /bin directory and make them executable with "chmod 755 SCRIPTNAME"" or place the scripts in the directory/directories where they should be executed (i.e. the analyses directory)  
+Alfa_vsearch_dbotu.sh    
+rename.pl  
+  
+###Analysis files  
+A number of files provided with this manuscript are necessary for the processing (they need to be placed in the analyses directory): This script parses the dereplicated sample wise fastafiles produced by the previous step (see Preparation_of_sequences.Rmd)  
+
+
+Make a 0% clustering table for use with bdotu3
+```{r}
+# mkdir -p dbotu3
+# cp S*.fas dbotu3 
+# cd dbotu3
+# bash Alfa_vsearch_dbotu.sh
+```
+Now we have a table (VSEARCH_100.otutable) and a corresponding centroids file (VSEARCH_100.centroids).  
+
+Process the OTU table with dbotu3 using abundance criteion 0 (a=0)
+```{r}
+# dt dbotuVS100
+# python dbotu3.py --dist 0.16 --abund 0 --log VSEARCH_100.log --output VSEARCH_100.otutable_dbotuprocessed0 VSEARCH_100.otutable VSEARCH_100.centroids
+```
+
+Process the OTU table with dbotu3 using abundance criteion 10 (a=10)
+```{r}
+#dt dbotuVS100_2
+#python dbotu3.py --dist 0.16 --abund 10 --log VSEARCH_100_a10.log --output VSEARCH_100.otutable_dbotuprocesseda10 VSEARCH_100.otutable VSEARCH_100.centroids```
+```
+
+make the files ready for benchmarking against LULU
+```{r}
+# mkdir -p dbotu_processing
+# cp VSEARCH_100.otutable_dbotuprocessed0 dbotu_processing/
+# cp VSEARCH_100.otutable_dbotuprocessed10 dbotu_processing/
+# cp VSEARCH_100.centroids dbotu_processing/
+# cd dbotu_processing
+```
+
+
+Setting directories and libraries etc
+```{r, eval=FALSE}
+setwd("~/analyses")
+setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
+main_path <- getwd()
+path <- file.path(main_path, "dbotu_processing")
+library(stringr)
+library(dplyr)
+library(tidyr)
+require(vegan)
+library(ggplot2)
+library(ggpmisc)
+library("taxize")
+```
+
+Moving files to laptop
+```{r}
+# scp p:data/Biowide/METHOD_PAPER/analyses_rerun/dbotu3/dbotu_processing/*dbotuprocessed* /Users/Tobias/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses/dbotu_processing
+# scp p:data/Biowide/METHOD_PAPER/analyses_rerun/dbotu3/dbotu_processing/VSEARCH_100.centroids /Users/Tobias/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses/dbotu_processing
+```
+
+Getting the centroids
+```{r}
+path <- file.path(main_path, "dbotu_processing")
+
+read_centr <- file.path(path, "VSEARCH_100.centroids")
+allcentroids <- read.csv(read_centr,sep='\t',header=F,as.is=TRUE)
+otusID <- seq(1,length(allcentroids$V1),2)
+seqsID <- seq(2,length(allcentroids$V1),2)
+otus <- allcentroids[otusID,]
+seqs <- allcentroids[seqsID,]
+otus <- gsub(">","",otus)
+centroid_df <- data.frame(qseqid = otus, sequence = seqs)
+
+centroid_tab <- file.path(path,"centroids_table_dbotu.txt")
+{write.table(centroid_df, centroid_tab, sep="\t",quote=FALSE, col.names = NA)}
+```
+
+Extracting the curated OTU sequences:
+```{r}
+centroid_tab <- file.path(path,"centroids_table_dbotu.txt")
+centroid_df <- read.table(centroid_tab, sep="\t", header=TRUE, as.is=TRUE)
+
+#Extract for the a=0 run
+tab_name <- file.path(path,"dbotu3_0.otutable")
+dbotutable_a0 <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+tab_name <- file.path(path,"dbotu3_10.otutable")
+dbotutable_a10 <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+
+all_centroids <- union(dbotutable_a0$OTU_ID,dbotutable_a10$OTU_ID)
+
+ingroup_seqs <- centroid_df[which(centroid_df$qseqid %in% all_centroids),]
+
+sinkname <- file.path(path, "dbotu3_all_centroids.txt")
+sink(sinkname)
+for (i in seq(1:dim(ingroup_seqs)[1])){
+  {header <- paste0(">",ingroup_seqs$qseqid[i],"\n")
+   cat(header)
+   seqq <- paste0(ingroup_seqs$sequence[i],"\n")
+   cat(seqq)
+  }
+}
+sink()
+
+```
+
+Get Blasthits
+```{r}
+#For a=0 run
+# ~/bin/blastn -db nt -num_threads 50 -max_target_seqs 20 -outfmt '6 std qlen ssciname staxid' -out dbotu3_all.blasthits -qcov_hsp_perc 90 -perc_identity 80 -query dbotu3_all_centroids.txt
+```
+
+Moving blasthits files to laptop
+```{r}
+# scp p:data/Biowide/METHOD_PAPER/analyses_rerun/dbotu3/dbotu_processing/dbotu3_all.blasthits /Users/Tobias/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses/dbotu_processing
+# scp p:data/Biowide/METHOD_PAPER/analyses_rerun/dbotu3/dbotu_processing/VSEARCH_100.centroids /Users/Tobias/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses/dbotu_processing
+```
+
+Reading blasthits file
+```{r,eval=FALSE}
+IDtable_name <- file.path(path,"dbotu3_all.blasthits")
+IDtable=read.csv(IDtable_name,sep='\t',header=F,as.is=TRUE)
+names(IDtable) <- c("qseqid","sseqid","pident","length","mismatch","gapopen","qstart","qend","sstart","send","evalue","bitscore","qlen","ssciname","staxid")
+```
+
+Filter list of hits so it only contains the top hits for each OTU (top hits defined as the best hit and ~0.50% down, i.e from 100% down to more than 99.49%, or from 97.5% down to more than 96.9%, set by the variable "margin")
+```{r,eval=FALSE}
+margin <- 0.51
+new_IDtable <- IDtable[0,] # prepare filtered matchlist
+ids <- names(table(IDtable$qseqid))
+i=1
+o=length(ids)
+for (name in ids){
+  print(paste0("progress: ", round(((i/o) * 100),0) ,"%")) # make a progressline
+  test <- IDtable[which(IDtable$qseqid == name),] # select all lines for a query
+  max <- max(test$pident)
+  test <- test[which(test$pident > (max-margin)),] # select all lines for a query
+  #These lines can be included if analysing a taxonomic group with a lot of
+     #"unassigned" sequences in GenBank, to exclude those from further evaluation.
+  #test2 <- test[!grepl("uncultured eukaryote",
+  #          test$truncated_ssciname,ignore.case = TRUE),] 
+  #if (nrow(test2) > 1) {test <- test2}
+  #test <- test[!grepl("Environmental",
+  #          test$truncated_ssciname,ignore.case = TRUE),]
+  if (nrow(test) > 0 ) { test$string <- toString(names(table(test$ssciname))) }
+  new_IDtable = rbind(new_IDtable,test) # add this row to the filtered IDtable
+  i=i+1
+}
+```
+Now we have a filtered list with only top hits for each OTU/centroid. We need to calculate the most commonly applied taxonomic annotation for each.  
+
+Calculate the most commonly used taxonomic annotation (taxid) for each OTU
+```{r,eval=FALSE}
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+# Apply function to blasthits
+new_IDtable$majority_taxid <-  with(new_IDtable, ave(staxid, qseqid , FUN=Mode))
+IDtable2 = new_IDtable[!duplicated(new_IDtable[c(1,17)]),]
+```
+Now our list only contain the most common taxid for each OTU. We need to get the full taxonomic affiliation to be able to sort at higher taxonomic levels.  
+
+###Get full taxonomic path for each OTU
+Get the taxonomic string (kingdom, phylum, class, order, family, genus, species) for each OTU (e.g. k__Viridiplantae;p__Streptophyta;c__Liliopsida;o__Poales;f__Poaceae;g__Agrostis;s__Agrostis_vinealis). Using the r-package taxize.
+```{r,eval=FALSE}
+all_staxids <- names(table(IDtable2$staxid)) # get all taxids for table
+all_classifications <- list() # prepare list for taxize output
+o=length(all_staxids) # number of taxids
+
+Start_from <- 1 # change if loop needs to be restarted due to time-out
+
+#Get ncbi classification of each entry
+for (cl in Start_from:o){ # the taxize command "classification" can be run on 
+  #the all_staxids vector in one line, but often there is
+  #a timeout command, therefor this loop workaround.
+ 
+  #make a progressline (indicating the index the loops needs to be
+  #restarted from if it quits)
+  print(paste0("processing: ", cl , " of ", o , " taxids")) 
+  all_classifications[cl] <- classification(all_staxids[cl], db = "ncbi")
+}
+
+#Construct a taxonomic path from each classification
+output <- data.frame(staxid=character(),taxpath=character(),
+                     stringsAsFactors=FALSE)
+totalnames <- length(all_staxids)
+for (curpart in seq(1:totalnames)){
+  print(paste0("progress: ", round(((curpart/totalnames) 
+                                    * 100),0) ,"%")) # make a progressline
+  currenttaxon <- all_classifications[curpart][[1]]
+  if ( !is.na(currenttaxon)) {
+    spec <- all_staxids[curpart]
+    gen <- currenttaxon[which(currenttaxon$rank == "genus"),"name"]
+    fam <- currenttaxon[which(currenttaxon$rank == "family"),"name"]
+    ord <- currenttaxon[which(currenttaxon$rank == "order"),"name"]
+    cla <- currenttaxon[which(currenttaxon$rank == "class"),"name"]
+    phy <- currenttaxon[which(currenttaxon$rank == "phylum"),"name"]
+    kin <- currenttaxon[which(currenttaxon$rank == "kingdom"),"name"]
+    spe <- currenttaxon[which(currenttaxon$rank == "species"),"name"]
+    currentpath <- gsub(" ", "_", 
+                        paste0("k__",kin,";p__",phy,";c__",cla,";o__",ord,";f__",fam,";g__",gen,";s__",spe))
+    output[curpart,"staxid"] <-  spec # add row to the filtered IDtable
+    output[curpart,"taxpath"] <-  currentpath # add row to the filtered IDtable
+  }
+}
+```
+...this will give some warnings, which is OK  
+
+Merge the taxonomic string with the filtered hit list, and save the list
+```{r,eval=FALSE}
+taxonomic_info <- merge(IDtable2,output,by = "staxid", all=TRUE)
+tbname <- file.path(path,"Table_otu_taxonomy_dbotu.txt")
+{write.table(taxonomic_info, tbname, sep="\t",quote=FALSE, col.names = NA)}
+```
+Now we have a table ("Table_otu_taxonomy.txt") with "full" taxonomic information for each OTU, that allows us to filter our OTU tables for ingroup.  
+
+###Identify ingroup OTUs
+Identify ingroup OTUs (plants) to match the reference dataset (keeping phylum Spermatophyta, but excluding a couple classes of "Bryophytes" and "Algae").
+```{r,eval=FALSE}
+tbname <- file.path(path,"Table_otu_taxonomy_dbotu.txt")
+# reads the table saved above. Alternatively just use 
+#     the table in memory (table2 <- taxonomic_info)
+table2 <- read.csv(tbname, sep ="\t", header=T, as.is=TRUE) 
+all_otus <- table2$qseqid
+table2 <- table2[grepl("Streptophyta",table2$taxpath),] # retain Streptophyta
+#discard not inventoried groups of Streptophyta
+outgroups <- c("Chlorophyta","Sphagnopsida","Jungermanniopsida",
+               "Bryopsida","Polytrichopsida","NA")
+for (n in seq(1:length(outgroups))){
+  table2 <- table2[!grepl(outgroups[n],table2$taxpath),]  
+}
+ingroup_otus <- table2$qseqid
+outgroup_otus <- setdiff(all_otus,ingroup_otus)
+tbname2 <- file.path(path,"Table_otu_taxonomy_plant_dbotu.txt")
+ingr <- file.path(path,"ingroup_otus_RDS_dbotu")
+outgr <- file.path(path,"outgroup_otus_RDS_dbotu")
+#save table
+{write.table(table2, tbname2, sep="\t",quote=FALSE, col.names = NA)}
+{saveRDS(ingroup_otus,ingr)}
+{saveRDS(outgroup_otus,outgr)}
+
+#Split taxonomic string into levels for the OTU data
+tab_name <- file.path(path,"Table_otu_taxonomy_plant_dbotu.txt")
+otutaxonomy <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+library(stringr)
+otulevels <- str_split_fixed(otutaxonomy$taxpath, ";", 7)
+otulevels <- gsub(".__","",otulevels)
+otulevels <- as.data.frame(otulevels)
+names(otulevels) <- c("kingdom","phylum","class","order","family","genus",
+                      "species")
+otutaxlevels <- cbind(otutaxonomy,otulevels)
+
+tab_name <- file.path(path,"Table_otu_taxonomy_plant_levels_dbotu.txt")
+{write.table(otutaxlevels, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+```
+Now we have a table ("Table_otu_taxonomy.txt") with "full" taxonomic information for each plant-OTU. We also have a vector ("ingroup_otus") of ingroup (plant) OTUs to filter the OTU tables with. (The ingroup and outgroup vectors are also saved as RDS)  
+
+###Filtering OTU tables to contain only ingroup taxa
+Filter the OTU tables to only contain plants. Also keep only samples that do not represent negative controls, pcr controls, etc. 
+```{r, eval=FALSE}
+allFiles <- list.files(path)
+allTabs <- allFiles[grepl("otutable$", allFiles)]
+####allTabs <- allTabs[grepl("DADA2", allTabs)]
+tab_names <- sort(as.vector(sapply(allTabs, function(x) strsplit(x, ".otutable")[[1]][1])))
+read_tabs <- file.path(path, allTabs)
+proc_tabs <- file.path(path, paste0(tab_names,".planttable"))
+## Vector for filtering out controls, putting samples in right order, etc..
+samples <- c("S001","S002","S003","S004","S005","S006","S007","S008","S067",
+             "S009","S010","S011","S012","S013","S014","S040","S068","S015",
+             "S016","S017","S018","S069","S070","S019","S020","S021","S022",
+             "S024","S025","S026","S027","S041","S028","S029","S030","S032",
+             "S033","S034","S035","S042","S036","S037","S038","S039","S086",
+             "S087","S088","S089","S044","S071","S045","S046","S047","S048",
+             "S049","S050","S051","S052","S053","S055","S056","S057","S058",
+             "S090","S059","S060","S061","S062","S063","S064","S065","S066",
+             "S072","S073","S074","S075","S076","S077","S078","S091","S079",
+             "S080","S081","S082","S083","S084","S085","S092","S094","S095",
+             "S096","S097","S098","S099","S100","S101","S102","S103","S104",
+             "S106","S107","S108","S109","S133","S110","S111","S112","S113",
+             "S114","S115","S116","S117","S118","S119","S120","S121","S122",
+             "S123","S124","S134","S125","S126","S127","S129","S130","S131",
+             "S132","S135","S136","S137") 
+tab <- list()
+keep_names <- list()
+for(i in seq_along(read_tabs)) {
+  tab[[i]] <- read.csv(read_tabs[i],sep='\t',header=T,as.is=TRUE,row.names = 1)
+  ## setting rowname for SWARM tables where  name is in separate column
+  if ("amplicon" %in% names(tab[[i]])) {  
+    row.names(tab[[i]]) <- gsub(";size.*$","",tab[[i]]$amplicon)
+  }
+  seq_names <- row.names(tab[[i]])
+  keep_names[[i]] <- seq_names %in% ingroup_otus
+  # constrain table to contain only ingroup OTUs and sample columns
+  tab[[i]] <- tab[[i]][keep_names[[i]],samples] 
+  {write.table(tab[[i]], proc_tabs[i], sep="\t",quote=FALSE, col.names = NA)}
+}
+```
+Now we have a new set of tables (with the suffix "planttable") containing only OTUs matching plant taxa. We now need to reextract the representative OTU sequences (centroids) for each ingroup-table to match those OTUs kept.  
+
+For each of the OTU tables: Calculating the OTU richness plot wise. For each method/table calculate taxonomic redundancy, total OTU count, Number of unique taxonomic names, Number of taxonomic names which are also present in the observational data
+```{r, eval=FALSE}
+allFiles <- list.files(path)
+all_plTabs <- allFiles[grepl("planttable$", allFiles)]
+#all_prTabs <- allFiles[grepl("planttable.luluprocessed$", allFiles)]
+all_Tabs <-  c(all_plTabs) #,all_prTabs)
+read_tabs <- file.path(path, all_Tabs)
+# Vector for filtering, etc. at this step redundant, but included for safety
+samples <- c("S001","S002","S003","S004","S005","S006","S007","S008","S067",
+             "S009","S010","S011","S012","S013","S014","S040","S068","S015",
+             "S016","S017","S018","S069","S070","S019","S020","S021","S022",
+             "S024","S025","S026","S027","S041","S028","S029","S030","S032",
+             "S033","S034","S035","S042","S036","S037","S038","S039","S086",
+             "S087","S088","S089","S044","S071","S045","S046","S047","S048",
+             "S049","S050","S051","S052","S053","S055","S056","S057","S058",
+             "S090","S059","S060","S061","S062","S063","S064","S065","S066",
+             "S072","S073","S074","S075","S076","S077","S078","S091","S079",
+             "S080","S081","S082","S083","S084","S085","S092","S094","S095",
+             "S096","S097","S098","S099","S100","S101","S102","S103","S104",
+             "S106","S107","S108","S109","S133","S110","S111","S112","S113",
+             "S114","S115","S116","S117","S118","S119","S120","S121","S122",
+             "S123","S124","S134","S125","S126","S127","S129","S130","S131",
+             "S132","S135","S136","S137")  
+
+tab_name <- file.path(path,"Table_otu_taxonomy_plant_levels_dbotu.txt")
+otutaxonomy <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+
+tab_name <- file.path(main_path,"Table_plants_2014_cleaned.txt")
+Plant_data2014 <- read.table(tab_name, sep="\t", row.names = 1, header=TRUE,
+                             as.is=TRUE)
+
+
+Plant_richness <- colSums(Plant_data2014)
+otu_richness <- data.frame(matrix(NA, nrow = 130, ncol = length(all_Tabs)))
+names(otu_richness) <- all_Tabs
+rel_redundancy <- vector()
+total_otu <- vector()
+mean_pident <- vector()
+corcoeffs <- vector()
+betadiversity <- vector()
+
+##inserted
+lm_intercept <- vector()
+lm_slope <- vector()
+read_sum <- vector()
+Num_otu_taxa_method <- vector()
+otu_taxa_method <- list()
+singleton_share  <- vector()
+doubleton_share  <- vector()
+ab_diss <- list()
+pa_diss <- list()
+##inserted until here
+
+for(i in seq_along(read_tabs)) {
+  tab <- read.csv(read_tabs[i],sep='\t',header=T,as.is=TRUE,row.names = 1) #read table
+  tab <- tab[,samples] # order samples
+  otu_richness[,i] = colSums(tab>0) # calculate plot wise richness
+  amp_index <- row.names(tab) #OTU id's of current table
+  reftaxindex <- which(otutaxonomy$qseqid %in% amp_index) # index of which OTUs are present in the current table
+  
+  ##inserted
+  perfect_match_index <- which(otutaxonomy$pident == 100 & otutaxonomy$qseqid %in% amp_index) # index of which OTUs are present in the current
+  otu_taxa_method[[i]] <- names(table(otutaxonomy$species[perfect_match_index])) #Which species names have been identified in the current table
+  Num_otu_taxa_method[i] <- length(otu_taxa_method[[i]]) # Number of plant species names
+  ## until here
+  
+  mean_pident[[i]] <- mean(otutaxonomy$pident[reftaxindex]) # average genbank match %
+  
+  spec <- otutaxonomy$species[reftaxindex] # names of all OTUs
+  redundancy <- sum((table(spec) -1)) # count of taxonomically redundant OTUs
+  total_otu[i] <- nrow(tab)   #total number of OTUs present in the table
+  betadiversity[i] <- total_otu[i]/mean(otu_richness[,i])
+  rel_redundancy[i] <- redundancy/total_otu[i] #  relative redundancy
+  # R^2 of linear regression of OTU richness vs plant richness
+  corcoeffs[i] <- (cor(Plant_richness,otu_richness[,i]))^2
+  lm_fit <- lm(otu_richness[,i]~ Plant_richness)
+  lm_intercept[i] <- lm_fit$coefficients[1]
+  lm_slope[i] <- lm_fit$coefficients[2]
+  read_sum[i] <- sum(tab)
+  
+  #Inserted. community dissimilarity
+  stable <- tab 
+  trans_table <- t(stable)
+  rowindex <- rowSums(trans_table) != 0
+  trans_table <- trans_table[rowindex,]
+  stand_table <- decostand(trans_table, "hellinger")
+  ab_diss[[i]] <- vegdist(stand_table, method="bray", binary=FALSE)
+  pa_diss[[i]] <- vegdist(stand_table, method="bray", binary=TRUE)
+  #inserted until here
+  
+  #inserted
+  tab2 <- tab
+  tab2[tab2>1] <- 1
+  singleton_share[i] <- sum(rowSums(tab2)==1)/total_otu[i]
+  doubleton_share[i] <- sum(rowSums(tab2)==2)/total_otu[i]
+
+}
+
+p_table <- Plant_data2014
+names(p_table) <- samples
+trans_p_table <- t(p_table)
+rowindex <- rowSums(trans_p_table) != 0
+trans_p_table <- trans_p_table[rowindex,]
+plant_pa_diss <- vegdist(trans_p_table, method="bray", binary=TRUE)
+
+
+#MANTEL test for correlation with plant data on both presence absence (pa) tables and abundance tables (ab)
+pa_vs_plant <- list() # Manteltest for plant data vd sequence data (pa)
+ab_vs_plant <- list() # Manteltest for plant data vd sequence data (ab)
+pa_vs_plant_statistic <- vector()  # Mantel statistic r (pa)
+pa_vs_plant_signif <- vector() # significance level (pa)
+ab_vs_plant_statistic <- vector() # Mantel statistic r (ab)
+ab_vs_plant_signif <- vector() # significance level (ab)
+ 
+for(i in 1:(length(read_tabs))) {
+ pa_vs_plant[[i]] <- mantel(plant_pa_diss, pa_diss[[i]], method="pearson", permutations=999)
+ pa_vs_plant_statistic[i] <- pa_vs_plant[[i]]$statistic
+ pa_vs_plant_signif[i] <- pa_vs_plant[[i]]$signif
+ ab_vs_plant[[i]] <- mantel(plant_pa_diss, ab_diss[[i]], method="pearson", permutations=999)
+ ab_vs_plant_statistic[i] <- ab_vs_plant[[i]]$statistic
+ ab_vs_plant_signif[i] <- ab_vs_plant[[i]]$signif
+}
+
+allFiles <- list.files(path)
+all_plTabs <- allFiles[grepl("otutable$", allFiles)]
+read_tabs <- file.path(path, all_plTabs)
+tab_rc <- read.csv(read_tabs[1],sep='\t',header=T,as.is=TRUE,row.names = 1) #read table
+sum(tab_rc) #6624089
+tab_rc <- read.csv(read_tabs[2],sep='\t',header=T,as.is=TRUE,row.names = 1) #read table
+sum(tab_rc) #6624089
+#VALUES ADDED TO TABLES MANUALLY
+
+#Synchronize names for methods, levels and curation state and 
+#   collect table statistics in one table
+method <- str_split_fixed(all_Tabs, "_", 3)[,1]
+level <- str_split_fixed(all_Tabs, "_", 3)[,2]
+level <- gsub(".planttable","",level)
+level <- factor(level,levels = c("10", "0"))
+#identify LULU curated tables
+
+#Merge all results in one table
+method_statistics <- data.frame(Method=method,Level=level,
+                                Correlation=corcoeffs,
+                                Redundancy=rel_redundancy,OTU_count=total_otu,
+                                Mean_match=mean_pident,Beta=betadiversity,
+                                Intercept = lm_intercept, Slope=lm_slope,
+                                Total_readcount = read_sum, Taxa=Num_otu_taxa_method, 
+                                Singleton=singleton_share,Doubleton=doubleton_share,
+                                Com_dissim_PA_stat=pa_vs_plant_statistic,
+                                Com_dissim_PA_sig=pa_vs_plant_signif,
+                                Com_dissim_AB_stat=ab_vs_plant_statistic,
+                                Com_dissim_AB_sig=ab_vs_plant_signif)
+
+tab_name <- file.path(path,"Table_method_statistics_dbotu.txt")
+{write.table(method_statistics, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+
+
+```
+
+Construct a full plant richness vs OTU richness table and synchronize names for methods, levels and curation state
+```{r,eval=FALSE}
+# add Plant richness to OTU richness dataframe
+richness_incl_obs <- cbind(Obs_richness=Plant_richness,otu_richness) 
+total_richness_df <- gather(richness_incl_obs, key=Method, 
+                            value=OTU_richness,-1)
+
+method <- str_split_fixed(total_richness_df$Method, "_", 3)[,1]
+level <- str_split_fixed(total_richness_df$Method, "_", 3)[,2]
+level <- gsub(".planttable","",level)
+
+level <- factor(level,levels = c("10", "0"))
+total_richness_df2 <- data.frame(Method=method,Level=level,
+                                 Obs=total_richness_df$Obs_richness,
+                                 OTU=total_richness_df$OTU_richness)
+
+#save a long formatted table for ggplot
+tab_name <- file.path(path,"Table_richness_calculations_long_dbotu.txt")
+{write.table(total_richness_df2, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+#save a wide formatted table for overview
+tab_name <- file.path(path,"Table_richness_calculations_wide_dbotu.txt")
+{write.table(richness_incl_obs, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+
+formula <- y ~ x
+#Plot full x/y plots
+dbotu_onestep_plot <- ggplot(total_richness_df2, aes(x=Obs,y=OTU)) +
+  geom_point(pch=21,size=1, alpha = 0.8) +
+  geom_abline(intercept = 0, linetype =2) +
+  facet_grid(Method ~Level) +
+  xlab("Plant richness") +
+  ylab("OTU richness") +
+  geom_smooth(method = "lm", se = F) +
+  stat_poly_eq(geom = "label", 
+               alpha = 0.5,aes(label = paste(..eq.label.., 
+                                             ..rr.label.., sep = "~~~")), 
+               formula = formula, label.x.npc = "left", 
+               label.y.npc = "top", parse = TRUE, size = 3, label.size = NA) +
+  scale_color_brewer(palette = "Set1") + theme_bw() + 
+  theme(text = element_text(size=8))
+
+namedbotu <- file.path(path,"dbotu_onestep_plotRDS")
+saveRDS(dbotu_onestep_plot,"dbotu_onestep_plotRDS")
+
+```

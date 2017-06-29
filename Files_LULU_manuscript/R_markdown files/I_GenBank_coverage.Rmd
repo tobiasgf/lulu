@@ -1,0 +1,62 @@
+---
+title: "I - GenBank coverage"
+author: "Tobias G Frøslev"
+date: "11/6/2017"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width=80)
+```
+This file records the test of the number of ingroup taxa present with ITS2 data on GenBank for the manuscript "Reliable biodiversity metrics from co-occurence based post-clustering curation of amplicon data".   
+
+This part can be run at any point.  
+NB: All markdown chuncks are set to "eval=FALSE". Change these accordingly. Also code blocks to be run outside R, has been #'ed out. Change this accordingly.  
+
+## Taxonomic filtering (Plants) of primary OTU tables 
+### Bioinformatic tools necessary
+Make sure that you have the following bioinformatic tools in your PATH  
+rentrez r-package (https://cran.r-project.org/web/packages/rentrez/index.html)  
+
+###Provided scripts  
+All codes needed for this step are included below  
+  
+###Analysis files  
+A species level species-site matrix of plant survey data (Table_plants_2014_cleaned.txt)  
+
+```{r, eval=FALSE}
+setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
+main_path <- getwd()
+path <- file.path(main_path, "otutables_processing")
+library(rentrez)
+
+tab_name <- file.path("/Users/Tobias/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses/Table_plants_2014_cleaned.txt")
+Plant_data2014 <- read.table(tab_name, sep="\t", row.names = 1, header=TRUE,as.is=TRUE)
+plant_names <- row.names(Plant_data2014) # 564 in total
+
+results <- list()
+hit_numbers <- vector()
+
+for (tax_no in seq_along(plant_names)){
+  search_term <- paste0(plant_names[tax_no],"[Organism] AND internal_transcribed_spacer_2[misc_feature]")
+  results[[tax_no]] <- entrez_search(db="nuccore", term=search_term, retmax=10)
+  hit_numbers[tax_no] <- results[[tax_no]]$count
+}
+
+saveRDS(results,"GenBank_taxon_retrievalRDS")
+saveRDS(hit_numbers,"GenBank_taxon_hitsRDS")
+saveRDS(hit_numbers,"GenBank_taxon_hitsRDS")
+
+hit_numbers <- readRDS("GenBank_taxon_hitsRDS")
+
+#get number of study species with ITS2 data in GenBank 
+sum(hit_numbers == 0) # 63
+sum(hit_numbers > 0) # 501
+501/564 # 88.8%
+```

@@ -1,0 +1,299 @@
+---
+title: "D - Taxonomic filtering"
+author: "Tobias G Frøslev"
+date: "11/5/2017" # Updated 28/6/2017
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width=80)
+```
+This file records the filtering of OTU tables for the manuscript "Reliable biodiversity metrics from co-occurence based post-clustering curation of amplicon data". Filtering of OTU tables is done to retain only ingroup (plant) sequences to be able to compare alle curated and uncurated tables with the observational reference plant data. This is done by pooling all centroids for all methods and using a custom taxonomic classification algorithm based on blastn against genbank sequences. This step is done after all the OTU tables from different piplines (VSEARCH, SWARM, CROP, DADA2, DADA2+VSEARCH) are finished. All OTU tables and corresponding centroids files are copied to a new folder "otutable_processing" and the identification and filtering is done collectively.   
+
+This part should be run after the OTU definition/clustering steps, documentet in the files  
+B_clustering_with_VSEARCH_SWARM_CROP.Rmd and C_Processing_with_DADA2.Rmd.  
+NB: All markdown chuncks are set to "eval=FALSE". Change these accordingly. Also code blocks to be run outside R, has been #'ed out. Change this accordingly.  
+
+## Taxonomic filtering (Plants) of primary OTU tables 
+### Bioinformatic tools necessary
+Make sure that you have the following bioinformatic tools in your PATH  
+VSEARCH v.2.02 or later (https://github.com/torognes/vsearch)  
+Blastn 2.4.0+ or later (and acces to the nucleotide collection from GenBank "nt" and make sure that you have access to ncbi taxbd - see https://www.ncbi.nlm.nih.gov/books/NBK279690/?report=reader#CmdLineAppsManual)  
+taxize r-package (https://cran.r-project.org/web/packages/taxize/index.html)  
+
+###Provided scripts  
+All codes needed for this step are included below  
+  
+###Analysis files  
+A number of files provided with this manuscript are necessary for the processing (they need to be placed in the analyses directory). This part needs all the centroid files and otutables from initial clustering approaches.
+
+##Setting working directory, loading packages, etc.
+```{r, eval=FALSE}
+library("taxize")
+setwd("~/analyses")
+setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
+main_path <- getwd() #"~/analyses" 
+path <- file.path(main_path, "otutables_processing")
+```
+
+##Collect all OTU tables and centroid files in one directory  
+```{r, eval=FALSE}
+# mkdir -p otutables_processing
+#  copy command is one line, copying all to "otutables_processing"
+# cp VSEARCH_PIPE/VSEARCH*otutable
+#    VSEARCH_PIPE/VSEARCH*centroids
+#    SWARM_PIPE/SWARM*otutable
+#    SWARM_PIPE/SWARM*centroids
+#    DADA2_extracted_samples/relabelled/VSEARCH_PIPE/DADA2VSEARCH*otutable
+#    DADA2_extracted_samples/relabelled/VSEARCH_PIPE/DADA2VSEARCH*centroids
+#    DADA2_NO.otutable DADA2_NO.centroids
+#    CROP95_PIPE/CROP_95.otutable
+#    CROP95_PIPE/CROP_95.centroids
+#    CROP97_PIPE/CROP_97.otutable
+#    CROP97_PIPE/CROP_97.centroids
+#    CROP98_PIPE/CROP_98.otutable
+#    CROP98_PIPE/CROP_98.centroids
+#    otutables_processing/
+```
+Now working copies of OTU tables and corresponding centroid files are in the directory "otutables_processing" for further processing!  
+
+##Taxonomic filtering 
+To be able to focus on only the plant sequences we need to get a taxonomic annotation of our sequences (OTUs) and filter the tables to only contain OTUs assigned to plant names. 
+
+###Getting taxonomic annotation of OTUs
+As different pipelines and clustering levels will have overlap between centroid sequences we combine and dereplicate those to reduce computing time.
+Concatenate and dereplicate representative OTUs from all analyses. 
+```{r, eval=FALSE}
+# cd otutables_processing
+# cat *centroids >> otus_col
+# vsearch --derep_fulllength otus_col --fasta_width 0 --xsize --output otus_derep
+```
+Now we have one file with all unique centroids (OTU representatives) from all analyses. We need to get the taxonomic affiliation of each of these. As we do not rely on the taxonomic annotation of all GenBank sequences, we employ a custom process that calculates the most common name among the top matches for each OTU.  
+
+Make a blast search for 20 best matches for each OTU
+```{r, eval=FALSE}
+# ~/bin/blastn -db nt -num_threads 50 -max_target_seqs 20
+#     -outfmt '6 std qlen ssciname staxid' -out otus.blasthits
+#     -qcov_hsp_perc 90 -perc_identity 80 -query otus_derep
+```
+Now we have a file with the 20 best genbank matches and corresponding pident (%identity) and taxid (unique ncbi taxon id) for each of our OTUs. To get a good estimate of the taxonomic affiliation of each of these OTUs, we use the most common taxon name among the top matches for each OTU.  
+
+Reading blasthits file
+```{r,eval=FALSE}
+IDtable_name <- file.path(path,"otus.blasthits")
+IDtable=read.csv(IDtable_name,sep='\t',header=F,as.is=TRUE)
+names(IDtable) <- c("qseqid","sseqid","pident","length","mismatch","gapopen","qstart","qend","sstart","send","evalue","bitscore","qlen","ssciname","staxid")
+```
+
+Filter list of hits so it only contains the top hits for each OTU (top hits defined as the best hit and ~0.50% down, i.e from 100% down to more than 99.49%, or from 97.5% down to more than 96.9%, set by the variable "margin")
+```{r,eval=FALSE}
+margin <- 0.51
+new_IDtable <- IDtable[0,] # prepare filtered matchlist
+ids <- names(table(IDtable$qseqid))
+i=1
+o=length(ids)
+for (name in ids){
+  print(paste0("progress: ", round(((i/o) * 100),0) ,"%")) # make a progressline
+  test <- IDtable[which(IDtable$qseqid == name),] # select all lines for a query
+  max <- max(test$pident)
+  test <- test[which(test$pident > (max-margin)),] # select all lines for a query
+  #These lines can be included if analysing a taxonomic group with a lot of
+     #"unassigned" sequences in GenBank, to exclude those from further evaluation.
+  #test2 <- test[!grepl("uncultured eukaryote",
+  #          test$truncated_ssciname,ignore.case = TRUE),] 
+  #if (nrow(test2) > 1) {test <- test2}
+  #test <- test[!grepl("Environmental",
+  #          test$truncated_ssciname,ignore.case = TRUE),]
+  if (nrow(test) > 0 ) { test$string <- toString(names(table(test$ssciname))) }
+  new_IDtable = rbind(new_IDtable,test) # add this row to the filtered IDtable
+  i=i+1
+}
+```
+Now we have a filtered list with only top hits for each OTU/centroid. We need to calculate the most commonly applied taxonomic annotation for each.  
+
+Calculate the most commonly used taxonomic annotation (taxid) for each OTU
+```{r,eval=FALSE}
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+# Apply function to blasthits
+new_IDtable$majority_taxid <-  with(new_IDtable, ave(staxid, qseqid , FUN=Mode))
+IDtable2 = new_IDtable[!duplicated(new_IDtable[c(1,17)]),]
+```
+Now our list only contain the most common taxid for each OTU. We need to get the full taxonomic affiliation to be able to sort at higher taxonomic levels.  
+
+###Get full taxonomic path for each OTU
+Get the taxonomic string (kingdom, phylum, class, order, family, genus, species) for each OTU (e.g. k__Viridiplantae;p__Streptophyta;c__Liliopsida;o__Poales;f__Poaceae;g__Agrostis;s__Agrostis_vinealis). Using the r-package taxize.
+```{r,eval=FALSE}
+all_staxids <- names(table(IDtable2$staxid)) # get all taxids for table
+all_classifications <- list() # prepare list for taxize output
+o=length(all_staxids) # number of taxids
+
+Start_from <- 1 # change if loop needs to be restarted due to time-out
+
+#Get ncbi classification of each entry
+for (cl in Start_from:o){ # the taxize command "classification" can be run on 
+  #the all_staxids vector in one line, but often there is
+  #a timeout command, therefor this loop workaround.
+ 
+  #make a progressline (indicating the index the loops needs to be
+  #restarted from if it quits)
+  print(paste0("processing: ", cl , " of ", o , " taxids")) 
+  all_classifications[cl] <- classification(all_staxids[cl], db = "ncbi")
+}
+
+#Construct a taxonomic path from each classification
+output <- data.frame(staxid=character(),taxpath=character(),
+                     stringsAsFactors=FALSE)
+totalnames <- length(all_staxids)
+for (curpart in seq(1:totalnames)){
+  print(paste0("progress: ", round(((curpart/totalnames) 
+                                    * 100),0) ,"%")) # make a progressline
+  currenttaxon <- all_classifications[curpart][[1]]
+  if ( !is.na(currenttaxon)) {
+    spec <- all_staxids[curpart]
+    gen <- currenttaxon[which(currenttaxon$rank == "genus"),"name"]
+    fam <- currenttaxon[which(currenttaxon$rank == "family"),"name"]
+    ord <- currenttaxon[which(currenttaxon$rank == "order"),"name"]
+    cla <- currenttaxon[which(currenttaxon$rank == "class"),"name"]
+    phy <- currenttaxon[which(currenttaxon$rank == "phylum"),"name"]
+    kin <- currenttaxon[which(currenttaxon$rank == "kingdom"),"name"]
+    spe <- currenttaxon[which(currenttaxon$rank == "species"),"name"]
+    currentpath <- gsub(" ", "_", 
+                        paste0("k__",kin,";p__",phy,";c__",cla,";o__",ord,";f__",fam,";g__",gen,";s__",spe))
+    output[curpart,"staxid"] <-  spec # add row to the filtered IDtable
+    output[curpart,"taxpath"] <-  currentpath # add row to the filtered IDtable
+  }
+}
+```
+...this will give some warnings, which is OK  
+
+Merge the taxonomic string with the filtered hit list, and save the list
+```{r,eval=FALSE}
+taxonomic_info <- merge(IDtable2,output,by = "staxid", all=TRUE)
+tbname <- file.path(main_path,"Table_otu_taxonomy1.txt")
+{write.table(taxonomic_info, tbname, sep="\t",quote=FALSE, col.names = NA)}
+```
+Now we have a table ("Table_otu_taxonomy.txt") with "full" taxonomic information for each OTU, that allows us to filter our OTU tables for ingroup.  
+
+###Identify ingroup OTUs
+Identify ingroup OTUs (plants) to match the reference dataset (keeping phylum Spermatophyta, but excluding a couple classes of "Bryophytes" and "Algae").
+```{r,eval=FALSE}
+tbname <- file.path(main_path,"Table_otu_taxonomy1.txt")
+# reads the table saved above. Alternatively just use 
+#     the table in memory (table2 <- taxonomic_info)
+table2 <- read.csv(tbname, sep ="\t", header=T, as.is=TRUE) 
+all_otus <- table2$qseqid
+table2 <- table2[grepl("Streptophyta",table2$taxpath),] # retain Streptophyta
+#discard not inventoried groups of Streptophyta
+outgroups <- c("Chlorophyta","Sphagnopsida","Jungermanniopsida",
+               "Bryopsida","Polytrichopsida","NA")
+for (n in seq(1:length(outgroups))){
+  table2 <- table2[!grepl(outgroups[n],table2$taxpath),]  
+}
+ingroup_otus <- table2$qseqid
+outgroup_otus <- setdiff(all_otus,ingroup_otus)
+tbname2 <- file.path(main_path,"Table_otu_taxonomy_plant1.txt")
+ingr <- file.path(main_path,"ingroup_otus_RDS1")
+outgr <- file.path(main_path,"outgroup_otus_RDS1")
+#save table
+{write.table(table2, tbname2, sep="\t",quote=FALSE, col.names = NA)}
+{saveRDS(ingroup_otus,ingr)}
+{saveRDS(outgroup_otus,outgr)}
+
+#Split taxonomic string into levels for the OTU data
+tab_name <- file.path(main_path,"Table_otu_taxonomy_plant1.txt")
+otutaxonomy <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+library(stringr)
+otulevels <- str_split_fixed(otutaxonomy$taxpath, ";", 7)
+otulevels <- gsub(".__","",otulevels)
+otulevels <- as.data.frame(otulevels)
+names(otulevels) <- c("kingdom","phylum","class","order","family","genus",
+                      "species")
+otutaxlevels <- cbind(otutaxonomy,otulevels)
+
+tab_name <- file.path(main_path,"Table_otu_taxonomy_plant_levels1.txt")
+{write.table(otutaxlevels, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+```
+Now we have a table ("Table_otu_taxonomy.txt") with "full" taxonomic information for each plant-OTU. We also have a vector ("ingroup_otus") of ingroup (plant) OTUs to filter the OTU tables with. (The ingroup and outgroup vectors are also saved as RDS)  
+
+###Filtering OTU tables to contain only ingroup taxa
+Filter the OTU tables to only contain plants. Also keep only samples that do not represent negative controls, pcr controls, etc. 
+```{r, eval=FALSE}
+allFiles <- list.files(path)
+allTabs <- allFiles[grepl("otutable$", allFiles)]
+####allTabs <- allTabs[grepl("DADA2", allTabs)]
+tab_names <- sort(as.vector(sapply(allTabs, function(x) strsplit(x, ".otutable")[[1]][1])))
+read_tabs <- file.path(path, allTabs)
+proc_tabs <- file.path(path, paste0(tab_names,".planttable"))
+## Vector for filtering out controls, putting samples in right order, etc..
+samples <- c("S001","S002","S003","S004","S005","S006","S007","S008","S067",
+             "S009","S010","S011","S012","S013","S014","S040","S068","S015",
+             "S016","S017","S018","S069","S070","S019","S020","S021","S022",
+             "S024","S025","S026","S027","S041","S028","S029","S030","S032",
+             "S033","S034","S035","S042","S036","S037","S038","S039","S086",
+             "S087","S088","S089","S044","S071","S045","S046","S047","S048",
+             "S049","S050","S051","S052","S053","S055","S056","S057","S058",
+             "S090","S059","S060","S061","S062","S063","S064","S065","S066",
+             "S072","S073","S074","S075","S076","S077","S078","S091","S079",
+             "S080","S081","S082","S083","S084","S085","S092","S094","S095",
+             "S096","S097","S098","S099","S100","S101","S102","S103","S104",
+             "S106","S107","S108","S109","S133","S110","S111","S112","S113",
+             "S114","S115","S116","S117","S118","S119","S120","S121","S122",
+             "S123","S124","S134","S125","S126","S127","S129","S130","S131",
+             "S132","S135","S136","S137") 
+tab <- list()
+keep_names <- list()
+for(i in seq_along(read_tabs)) {
+  tab[[i]] <- read.csv(read_tabs[i],sep='\t',header=T,as.is=TRUE,row.names = 1)
+  ## setting rowname for SWARM tables where  name is in separate column
+  if ("amplicon" %in% names(tab[[i]])) {  
+    row.names(tab[[i]]) <- gsub(";size.*$","",tab[[i]]$amplicon)
+  }
+  seq_names <- row.names(tab[[i]])
+  keep_names[[i]] <- seq_names %in% ingroup_otus
+  # constrain table to contain only ingroup OTUs and sample columns
+  tab[[i]] <- tab[[i]][keep_names[[i]],samples] 
+  {write.table(tab[[i]], proc_tabs[i], sep="\t",quote=FALSE, col.names = NA)}
+}
+```
+Now we have a new set of tables (with the suffix "planttable") containing only OTUs matching plant taxa. We now need to reextract the representative OTU sequences (centroids) for each ingroup-table to match those OTUs kept.  
+
+Extract ingroup (plant) centroids for each ingroup table
+```{r, eval=FALSE}
+read_centr <- file.path(path, "otus_derep")
+allcentroids <- read.csv(read_centr,sep='\t',header=F,as.is=TRUE)
+otusID <- seq(1,length(allcentroids$V1),2)
+seqsID <- seq(2,length(allcentroids$V1),2)
+otus <- allcentroids[otusID,]
+seqs <- allcentroids[seqsID,]
+otus <- gsub(">","",otus)
+centroid_df <- data.frame(centroid = otus, sequence = seqs)
+
+sinkname <- file.path(path,paste0(tab_names,".plantcentroids"))
+
+for(i in seq_along(read_tabs)) {
+  select <- row.names(tab[[i]])
+  selected_seqs <- centroid_df[centroid_df$centroid %in% select,]
+  {
+    sink(sinkname[i])
+    for (seqX in seq_along(selected_seqs$centroid)) {
+      header <- paste0(">",selected_seqs$centroid[seqX],"\n")
+      cat(header)
+      seqq <- paste0(selected_seqs$sequence[seqX],"\n")
+      cat(seqq)
+    }
+    sink()
+  }
+}
+```
+Now we have a new set of centroid files (with the suffix "plantcentroids") containing only ingroup plant taxa (i.e matching the filtered otutables (planttables). We now are ready to make the match lists with information of pairwise dissimilarity of OTUs from each separate analysis.

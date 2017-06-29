@@ -1,0 +1,63 @@
+---
+title: "A - Preparation of sequences"
+author: "Tobias G Frøslev"
+date: "11/5/2017" #updated 28/6/2017
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This file records the initial processing of raw sequence data for further processing with the three approaches (VSEARCH, SWARM, CROP) for the manuscript "Reliable biodiversity metrics from co-occurence based post-clustering curation of amplicon data". The data comes from Illumina Miseq 2x250bp amplicon sequencing of the ITS2 region amplified from soil DNA extracts with plant-specific primer S2F and general primer ITS4. It consists of 130 samples amplified in triplicates.  
+NB: All markdown chuncks are set to "eval=FALSE". Change these accordingly. Also code blocks to be run outside R, has been #'ed out. Change this accordingly.  
+
+# Processing of raw data
+### Bioinformatic tools
+Make sure that the following bioinformatic tools are in the PATH  
+VSEARCH v.2.02 or later (https://github.com/torognes/vsearch)  
+Cutadapt 1.10 (https://cutadapt.readthedocs.io/en/stable/)  
+
+###Provided scripts  
+A number of scripts are provided with this manuscript. Place these in the /bin directory and make them executable with "chmod 755 SCRIPTNAME"" or place the scripts in the directory/directories where they should be executed (i.e. the analyses directory)  
+Alfa_merge_all_pairs.sh  
+Alfa_demultiplex_universal.sh  
+Alfa_concatenate_and_dereplicate_fasta.sh  
+  
+###Analysis files  
+A number of files provided with this manuscript are necessary for the processing (they need to be placed in the analyses directory):  
+batchfile.list  
+tags_R1A.list  
+tags_R1B.list  
+tags_R2A.list  
+tags_R2B.list  
+tags_R3A.list  
+tags_R3B.list  
+
+###Get data
+```{r}
+# cd analyses
+# wget http://datadryad.org/bitstream/handle/xxxxxxxxxx  ## To be oploaded on accept.
+```
+
+###Merge forward and reverse reads for all libraries.
+```{r}
+# bash Alfa_merge_all_pairs.sh
+```
+
+###Demultiplex the sequences and dereplicate at sample level
+This part needs the file 'batchfile.list' as well as 6 files with information on the tags used for samples: (tags_R1A.list, tags_R1B.list, tags_R2A.list, tags_R2B.list, tags_R3A.list, tags_R3B.list)
+```{r}
+# bash Alfa_demultiplex_universal.sh
+```
+Now we have 3 fasta files  (pcr triplicates) with dereplicated reads assigned to each of the 130 samples/sites in the study.  
+
+###Merge the three replicates
+We are not interested in the informmation from separate PCRs in these analyses, and hence we pool all files belonging to the same sample. This script will put all the single replicates in a new directory, and make a new concatenated file for each sample in the analyses directory. The concatenated file is then dereplicated.
+```{r}
+# Alfa_concatenate_and_dereplicate_fasta.sh
+```
+Now the sequences have been assigned to samples, dereplicated, and are ready for further processing!

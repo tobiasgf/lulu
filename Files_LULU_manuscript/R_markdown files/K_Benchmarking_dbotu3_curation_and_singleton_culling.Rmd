@@ -1,0 +1,449 @@
+---
+title: "K - Benchmarking dbotu3 curation and singleton culling"
+author: "Tobias G Frøslev"
+date: "11/6/2017"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This file records the post-clustering curation test for dbotu3, and effect of singleton culling for the manuscript "Reliable biodiversity metrics from co-occurence based post-clustering curation of amplicon data".  
+
+For each table the following metrics are calculated:  
+(a) Linear regression of OTU richness vs Plant richness for the 130 samples (including r^2^ value), 
+(b) Number of OTUs,  
+(c) Taxonomic redundancy,  
+(d) Betadiversity (species/OTU turnover between sites), and  
+(f) Distribution of best reference database matches
+
+This step should be carried out after the LULU curation of the OTU tables documented in the file: E_Taxonomic_filtering.Rmd    
+NB: All markdown chuncks are set to "eval=FALSE". Change these accordingly. Also code blocks to be run outside R, has been #'ed out. Change this accordingly.
+  
+###Analysis files  
+This step is dependent on the presence of OTU tables (un-curated tables and the corresponding tables curated with LULU)  
+
+Setting directories and libraries etc
+```{r, eval=FALSE}
+setwd("~/analyses")
+setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
+main_path <- getwd()
+path <- file.path(main_path, "otutables_processsing_dbotu")
+library(stringr)
+library(dplyr)
+library(tidyr)
+require(vegan)
+```
+
+Make 'singleton culled' versions of all unprocessed tables
+```{r, eval=FALSE}
+allFiles <- list.files(path)
+all_plTabs <- allFiles[grepl("planttable$", allFiles)]
+all_Tabs <-  c(all_plTabs)
+read_tabs <- file.path(path, all_Tabs)
+proc_tabs <- file.path(path, paste0(all_Tabs,"_xsingletons"))
+# Vector for filtering, etc. at this step redundant, but included for safety
+samples <- c("S001","S002","S003","S004","S005","S006","S007","S008","S067",
+             "S009","S010","S011","S012","S013","S014","S040","S068","S015",
+             "S016","S017","S018","S069","S070","S019","S020","S021","S022",
+             "S024","S025","S026","S027","S041","S028","S029","S030","S032",
+             "S033","S034","S035","S042","S036","S037","S038","S039","S086",
+             "S087","S088","S089","S044","S071","S045","S046","S047","S048",
+             "S049","S050","S051","S052","S053","S055","S056","S057","S058",
+             "S090","S059","S060","S061","S062","S063","S064","S065","S066",
+             "S072","S073","S074","S075","S076","S077","S078","S091","S079",
+             "S080","S081","S082","S083","S084","S085","S092","S094","S095",
+             "S096","S097","S098","S099","S100","S101","S102","S103","S104",
+             "S106","S107","S108","S109","S133","S110","S111","S112","S113",
+             "S114","S115","S116","S117","S118","S119","S120","S121","S122",
+             "S123","S124","S134","S125","S126","S127","S129","S130","S131",
+             "S132","S135","S136","S137")  
+
+
+for(i in seq_along(read_tabs)) {
+  tab <- read.csv(read_tabs[i],sep='\t',header=T,as.is=TRUE,row.names = 1)
+  tab <- tab[,samples] # order samples
+  tab[tab == 1] <- 0  ###REMOVE SINGLETONS
+  tab <- tab[which(rowSums(tab) > 0),]
+  {write.table(tab, proc_tabs[i], sep="\t",quote=FALSE, 
+               col.names = NA)}
+}
+```
+
+Apply dbotu3 as a post-clustering alternative to LULU
+```{r}
+#Copy all OTU tables to new directories for processing
+# mkdir -p Processing_a0
+# cp otutables_processing/*planttable dbotu3/Processing_a0/
+# cp otutables_processing/*plantcentroids dbotu3/Processing_a0/
+# cp otutables_processing/*planttable dbotu3/Processing_a10
+# cp otutables_processing/*plantcentroids dbotu3/Processing_a10
+
+#Copy all OTU tables to new directory for processing
+# cd dbotu3/Processing_a0
+# for f in *planttable; do
+#  log=${f/planttable/log}
+#  table=${f}
+#  centroids=${f/planttable/plantcentroids}
+#  output=${f/planttable/planttable_dbotuprocessed10}
+#  python dbotu3tgf.py --dist 0.16 --abund 0 --log $log --output $output $table $centroids
+# done
+
+# cd dbotu3/Processing_a10
+# for f in *planttable; do
+#  log=${f/planttable/log}
+#  table=${f}
+#  centroids=${f/planttable/plantcentroids}
+#  output=${f/planttable/planttable_dbotuprocessed10}
+#  python dbotu3tgf.py --dist 0.16 --abund 10 --log $log --output $output $table $centroids
+# done
+```
+
+For each of the OTU tables: Calculating biodiversity metrics (all tables need to be placed in same directory).  
+```{r, eval=FALSE}
+allFiles <- list.files(path)
+all_plTabs <- allFiles[grepl("planttable$", allFiles)]
+all_prTabs <- allFiles[grepl("planttable_luluprocessed$", allFiles)]
+all_prTabs_xsingle <- allFiles[grepl("planttable_xsingletons$", allFiles)]
+all_prTabs_dbotu <- allFiles[grepl("planttable_dbotuprocessed", allFiles)]
+
+all_Tabs <-  c(all_plTabs,all_prTabs,all_prTabs_xsingle,all_prTabs_dbotu)
+read_tabs <- file.path(path, all_Tabs)
+# Vector for filtering, etc. at this step redundant, but included for safety
+samples <- c("S001","S002","S003","S004","S005","S006","S007","S008","S067",
+             "S009","S010","S011","S012","S013","S014","S040","S068","S015",
+             "S016","S017","S018","S069","S070","S019","S020","S021","S022",
+             "S024","S025","S026","S027","S041","S028","S029","S030","S032",
+             "S033","S034","S035","S042","S036","S037","S038","S039","S086",
+             "S087","S088","S089","S044","S071","S045","S046","S047","S048",
+             "S049","S050","S051","S052","S053","S055","S056","S057","S058",
+             "S090","S059","S060","S061","S062","S063","S064","S065","S066",
+             "S072","S073","S074","S075","S076","S077","S078","S091","S079",
+             "S080","S081","S082","S083","S084","S085","S092","S094","S095",
+             "S096","S097","S098","S099","S100","S101","S102","S103","S104",
+             "S106","S107","S108","S109","S133","S110","S111","S112","S113",
+             "S114","S115","S116","S117","S118","S119","S120","S121","S122",
+             "S123","S124","S134","S125","S126","S127","S129","S130","S131",
+             "S132","S135","S136","S137")  
+
+tab_name <- file.path(main_path,"Table_otu_taxonomy_plant_levels.txt")
+otutaxonomy <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+
+tab_name <- file.path(main_path,"Table_plants_2014_cleaned.txt")
+Plant_data2014 <- read.table(tab_name, sep="\t", row.names = 1, header=TRUE,
+                             as.is=TRUE)
+
+Plant_richness <- colSums(Plant_data2014)
+otu_richness <- data.frame(matrix(NA, nrow = 130, ncol = length(all_Tabs)))
+names(otu_richness) <- all_Tabs
+rel_redundancy <- vector()
+total_otu <- vector()
+mean_pident <- vector()
+corcoeffs <- vector()
+betadiversity <- vector()
+
+##inserted
+lm_intercept <- vector()
+lm_slope <- vector()
+read_sum <- vector()
+Num_otu_taxa_method <- vector()
+otu_taxa_method <- list()
+singleton_share  <- vector()
+doubleton_share  <- vector()
+ab_diss <- list()
+pa_diss <- list()
+##inserted until here
+
+for(i in seq_along(read_tabs)) {
+  tab <- read.csv(read_tabs[i],sep='\t',header=T,as.is=TRUE,row.names = 1) #read table
+  tab <- tab[,samples] # order samples
+  otu_richness[,i] = colSums(tab>0) # calculate plot wise richness
+  amp_index <- row.names(tab) #OTU id's of current table
+  reftaxindex <- which(otutaxonomy$qseqid %in% amp_index) # index of which OTUs are present in the current table
+  
+  ##inserted
+  perfect_match_index <- which(otutaxonomy$pident > 99.49 & otutaxonomy$qseqid %in% amp_index) # index of which OTUs are present in the current
+  otu_taxa_method[[i]] <- names(table(otutaxonomy$species[perfect_match_index])) #Which species names have been identified in the current table
+  Num_otu_taxa_method[i] <- length(otu_taxa_method[[i]]) # Number of plant species names
+  ##inserted until here
+  
+  mean_pident[[i]] <- mean(otutaxonomy$pident[reftaxindex]) # average genbank match %
+  
+  spec <- otutaxonomy$species[reftaxindex] # names of all OTUs
+  redundancy <- sum((table(spec) -1)) # count of taxonomically redundant OTUs
+  total_otu[i] <- nrow(tab)   #total number of OTUs present in the table
+  betadiversity[i] <- total_otu[i]/mean(otu_richness[,i])
+  redundancy <- sum((table(spec) -1))
+  rel_redundancy[i] <- redundancy/total_otu[i] #  relative redundancy
+  # R^2 of linear regression of OTU richness vs plant richness
+  corcoeffs[i] <- (cor(Plant_richness,otu_richness[,i]))^2
+  lm_fit <- lm(otu_richness[,i]~ Plant_richness)
+  lm_intercept[i] <- lm_fit$coefficients[1]
+  lm_slope[i] <- lm_fit$coefficients[2]
+  read_sum[i] <- sum(tab)
+  
+  #Inserted. community dissimilarity
+  stable <- tab 
+  trans_table <- t(stable)
+  rowindex <- rowSums(trans_table) != 0
+  trans_table <- trans_table[rowindex,]
+  stand_table <- decostand(trans_table, "hellinger")
+  ab_diss[[i]] <- vegdist(stand_table, method="bray", binary=FALSE)
+  pa_diss[[i]] <- vegdist(stand_table, method="bray", binary=TRUE)
+  #inserted until here
+  
+  #inserted
+  tab2 <- tab
+  tab2[tab2>1] <- 1
+  singleton_share[i] <- sum(rowSums(tab2)==1)/total_otu[i]
+  doubleton_share[i] <- sum(rowSums(tab2)==2)/total_otu[i]
+}
+
+#Synchronize names for methods, levels and curation state and 
+#   collect table statistics in one table
+method <- str_split_fixed(all_Tabs, "_", 3)[,1]
+method[method == "DADA2"] <- "DADA2(+VS)"
+method[method == "DADA2VSEARCH"] <- "DADA2(+VS)"
+level <- str_split_fixed(all_Tabs, "_", 3)[,2]
+level <- gsub(".planttable","",level)
+level[level == "0.95"] <- "95"
+level[level == "0.96"] <- "96"
+level[level == "0.97"] <- "97"
+level[level == "0.98"] <- "98"
+level[level == "0.985"] <- "98.5"
+level[level == "NO"] <- "99/100"
+level[level == "3"] <- "99/100"
+level[level == "5"] <- "98.5"
+level[level == "7"] <- "98"
+level[level == "10"] <- "97"
+level[level == "13"] <- "96"
+level[level == "15"] <- "95"
+level <- factor(level,levels = c("99/100", "98.5", "98", "97", "96", "95"))
+
+#identify curated tables
+processed <- str_split_fixed(all_Tabs, "_", 3)[,3]
+luluindex <- which(processed == "luluprocessed")
+dbotu_a10_index <- which(processed == "dbotuprocessed10")
+dbotu_a0_index <- which(processed == "dbotuprocessed0")
+singleton_index <- which(processed == "xsingletons")
+
+raw_index <- c(luluindex,dbotu_a10_index,dbotu_a0_index,singleton_index)
+
+processed[dbotu_a10_index] <- "dbotu10"
+processed[dbotu_a0_index] <- "dbotu0"
+processed[singleton_index] <- "xsingle"
+processed[luluindex] <- "curated"
+processed[-raw_index] <- "raw"
+
+
+#Merge all results in one table
+method_statistics <- data.frame(Method=method,Level=level,
+                                Curated=processed,Correlation=corcoeffs,
+                                Redundancy=rel_redundancy,OTU_count=total_otu,
+                                Mean_match=mean_pident,Beta=betadiversity,
+                                Intercept = lm_intercept, Slope=lm_slope,
+                                Total_readcount = read_sum, Taxa=Num_otu_taxa_method, 
+                                Singleton=singleton_share,Doubleton=doubleton_share)
+
+tab_name <- file.path(main_path,"Table_method_statistics_benchmarking.txt")
+{write.table(method_statistics, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+```
+
+Construct a full plant richness vs OTU richness table and synchronize names for methods, levels and curation state
+```{r,eval=FALSE}
+# add Plant richness to OTU richness dataframe
+richness_incl_obs <- cbind(Obs_richness=Plant_richness,otu_richness) 
+total_richness_df <- gather(richness_incl_obs, key=Method, 
+                            value=OTU_richness,-1)
+
+method <- str_split_fixed(total_richness_df$Method, "_", 3)[,1]
+method[method == "DADA2"] <- "DADA2(+VS)"
+method[method == "DADA2VSEARCH"] <- "DADA2(+VS)"
+level <- str_split_fixed(total_richness_df$Method, "_", 3)[,2]
+level <- gsub(".planttable","",level)
+level[level == "0.95"] <- "95"
+level[level == "0.96"] <- "96"
+level[level == "0.97"] <- "97"
+level[level == "0.98"] <- "98"
+level[level == "0.985"] <- "98.5"
+level[level == "NO"] <- "99/100"
+level[level == "3"] <- "99/100"
+level[level == "5"] <- "98.5"
+level[level == "7"] <- "98"
+level[level == "10"] <- "97"
+level[level == "13"] <- "96"
+level[level == "15"] <- "95"
+level[level == "100"] <- "99"
+level <- factor(level,levels = c("99/100", "98.5", "98", "97", "96", "95"))
+processed <- str_split_fixed(total_richness_df$Method, "_", 3)[,3]
+
+luluindex <- which(processed == "luluprocessed")
+dbotu_a10_index <- which(processed == "dbotuprocessed10")
+dbotu_a0_index <- which(processed == "dbotuprocessed0")
+singleton_index <- which(processed == "xsingletons")
+
+raw_index <- c(luluindex,dbotu_a10_index,dbotu_a0_index,singleton_index)
+#raw_index <- c(luluindex,dbotu_a10_index)
+
+processed[dbotu_a10_index] <- "dbotu10"
+processed[dbotu_a0_index] <- "dbotu0"
+processed[singleton_index] <- "xsingle"
+processed[luluindex] <- "curated"
+processed[-raw_index] <- "raw"
+
+total_richness_df2 <- data.frame(Method=method,Level=level,Curated=processed,
+                                 Obs=total_richness_df$Obs_richness,
+                                 OTU=total_richness_df$OTU_richness)
+
+#save a long formatted table for ggplot
+tab_name <- file.path(main_path,"Table_richness_calculations_long_bdotu3_benchmarking.txt")
+{write.table(total_richness_df2, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+#save a wide formatted table for overview
+tab_name <- file.path(main_path,"Table_richness_calculations_wide_bdotu3_benchmarking.txt")
+{write.table(richness_incl_obs, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+```
+
+Construct a table with the best match (%) for each OTU pr method/table separating retained and discarded OTUs.
+```{r,eval=FALSE}
+setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
+main_path <- getwd()
+path <- file.path(main_path, "otutables_processsing_dbotu")
+
+allFiles <- list.files(path)
+all_plTabs <- allFiles[grepl("planttable$", allFiles)]
+all_prTabs_dbotu0 <- allFiles[grepl("planttable_dbotuprocessed0", allFiles)]
+all_prTabs_dbotu10 <- allFiles[grepl("planttable_dbotuprocessed10", allFiles)]
+all_prTabs_xsingle <- allFiles[grepl("planttable_xsingletons", allFiles)]
+
+read_tabs_raw <- file.path(path, all_plTabs)
+read_tabs_dbotu3a0 <- file.path(path, all_prTabs_dbotu0)
+read_tabs_dbotu3a10 <- file.path(path, all_prTabs_dbotu10)
+read_tabs_xsingle <- file.path(path, all_prTabs_xsingle)
+
+tab_names <- sort(as.vector(sapply(all_plTabs, function(x) strsplit(x, ".planttable")[[1]][1])))
+
+tab_name <- file.path(main_path,"Table_otu_taxonomy_plant_levels.txt")
+otutaxonomy <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+
+retained_avg <- vector()
+discarded_avg <- vector()
+pident_frame_a0 <- data.frame()
+pident_frame_a10 <- data.frame()
+pident_frame_xs <- data.frame()
+for(i in seq_along(read_tabs_raw)) {
+  tab_raw <- read.csv(read_tabs_raw[i],sep='\t',header=T,as.is=TRUE,row.names = 1) #read table
+  tab_a0 <- read.csv(read_tabs_dbotu3a0[i],sep='\t',header=T,as.is=TRUE,row.names = 1) #read table
+  tab_a10 <- read.csv(read_tabs_dbotu3a10[i],sep='\t',header=T,as.is=TRUE,row.names = 1) #read table
+  tab_xs <- read.csv(read_tabs_xsingle[i],sep='\t',header=T,as.is=TRUE,row.names = 1) #read table
+
+  retained_amplicons_a0 <- row.names(tab_a0)
+  retained_amplicons_a10 <- row.names(tab_a10)
+  retained_amplicons_xs <- row.names(tab_xs)
+  
+  discarded_amplicons_a0 <- setdiff(row.names(tab_raw),retained_amplicons_a0)
+  discarded_amplicons_a10 <- setdiff(row.names(tab_raw),retained_amplicons_a0)
+  discarded_amplicons_xs <- setdiff(row.names(tab_raw),retained_amplicons_xs)
+
+  number_observations_a0 <- length(retained_amplicons_a0)+length(discarded_amplicons_a0)
+  number_observations_a10 <- length(retained_amplicons_a10)+length(discarded_amplicons_a10)
+  number_observations_xs <- length(retained_amplicons_xs)+length(discarded_amplicons_xs)
+
+  retained_index_a0 <- which(otutaxonomy$qseqid %in% retained_amplicons_a0)
+  retained_index_a10 <- which(otutaxonomy$qseqid %in% retained_amplicons_a10)
+  retained_index_xs <- which(otutaxonomy$qseqid %in% retained_amplicons_xs)
+
+  discarded_index_a0 <- which(otutaxonomy$qseqid %in% discarded_amplicons_a0)
+  discarded_index_a10 <- which(otutaxonomy$qseqid %in% discarded_amplicons_a10)
+  discarded_index_xs <- which(otutaxonomy$qseqid %in% discarded_amplicons_xs)
+  
+  retained_pident_a0 <- otutaxonomy$pident[retained_index_a0]
+  retained_pident_a10 <- otutaxonomy$pident[retained_index_a10]
+  retained_pident_xs <- otutaxonomy$pident[retained_index_xs]
+  
+  discarded_pident_a0 <- otutaxonomy$pident[discarded_index_a0]
+  discarded_pident_a10 <- otutaxonomy$pident[discarded_index_a10]
+  discarded_pident_xs <- otutaxonomy$pident[discarded_index_xs]
+  
+  method_pident_a0 <- rep(tab_names[i],number_observations_a0)
+  method_pident_a10 <- rep(tab_names[i],number_observations_a10)
+  method_pident_xs <- rep(tab_names[i],number_observations_xs)
+  
+  retained_or_discarded_a0 <- c(rep("retained",length(retained_amplicons_a0)),
+                             rep("discarded",length(discarded_amplicons_a0)))
+  retained_or_discarded_a10 <- c(rep("retained",length(retained_amplicons_a10)),
+                             rep("discarded",length(discarded_amplicons_a10)))
+  retained_or_discarded_xs <- c(rep("retained",length(retained_amplicons_xs)),
+                             rep("discarded",length(discarded_amplicons_xs)))
+  
+  pident_a0 <- c(retained_pident_a0,discarded_pident_a0)
+  pident_a10 <- c(retained_pident_a10,discarded_pident_a10)
+  pident_xs <- c(retained_pident_xs,discarded_pident_xs)
+
+  current_pident_frame_a0 <- data.frame(method_pident_a0,retained_or_discarded_a0,pident_a0)
+  current_pident_frame_a10 <- data.frame(method_pident_a10,retained_or_discarded_a10,pident_a10)
+  current_pident_frame_xs <- data.frame(method_pident_xs,retained_or_discarded_xs,pident_xs)
+  
+  pident_frame_a0 <- rbind(pident_frame_a0,current_pident_frame_a0)
+  pident_frame_a10 <- rbind(pident_frame_a10,current_pident_frame_a10)
+  pident_frame_xs <- rbind(pident_frame_xs,current_pident_frame_xs)
+}
+
+names(pident_frame_a0) <- c("method_pident","retained_or_discarded","pident")
+names(pident_frame_a10) <- c("method_pident","retained_or_discarded","pident")
+names(pident_frame_xs) <- c("method_pident","retained_or_discarded","pident")
+
+
+pident_frame_a0$pca <- "dbotu a0"
+pident_frame_a10$pca <- "dbotu a10"
+pident_frame_xs$pca <- "xsingle"
+
+pident_frame <- rbind(pident_frame_a0,pident_frame_a10,pident_frame_xs)
+
+#Synchronize names for methods, levels and curation state
+pident_frame$level_pident <- 
+ str_split_fixed(as.character(pident_frame$method_pident), "_", 2)[,2]
+pident_frame$method_pident <- 
+ str_split_fixed(as.character(pident_frame$method_pident), "_", 2)[,1]
+pident_frame$method_pident[pident_frame$method_pident == "DADA2"] <- 
+ "DADA2(+VS)"
+pident_frame$method_pident[pident_frame$method_pident == "DADA2VSEARCH"] <- 
+ "DADA2(+VS)"
+pident_frame$level_pident[pident_frame$level_pident == "0.95"] <- "95"
+pident_frame$level_pident[pident_frame$level_pident == "0.96"] <- "96"
+pident_frame$level_pident[pident_frame$level_pident == "0.97"] <- "97"
+pident_frame$level_pident[pident_frame$level_pident == "0.98"] <- "98"
+pident_frame$level_pident[pident_frame$level_pident == "0.985"] <- "98.5"
+pident_frame$level_pident[pident_frame$level_pident == "NO"] <- "99/100"
+pident_frame$level_pident[pident_frame$level_pident == "3"] <- "99/100"
+pident_frame$level_pident[pident_frame$level_pident == "5"] <- "98.5"
+pident_frame$level_pident[pident_frame$level_pident == "7"] <- "98"
+pident_frame$level_pident[pident_frame$level_pident == "10"] <- "97"
+pident_frame$level_pident[pident_frame$level_pident == "13"] <- "96"
+pident_frame$level_pident[pident_frame$level_pident == "15"] <- "95"
+pident_frame$level_pident <- 
+ factor(pident_frame$level_pident,levels = c("99/100", "98.5", 
+                                             "98", "97", "96", "95"))
+
+#Combine with results from LULU
+tab_name <- file.path(main_path,"Table_OTU_match_rates.txt")
+pident_lulu <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+
+pident_lulu$pca <- "LULU"
+
+pident_frame <- pident_frame[,c(1,2,3,5,4)]
+pident_lulu <- pident_lulu[,c(2,3,4,5,6)]
+pident_frame <- rbind(pident_lulu,pident_frame)
+
+pident_frame$pca <- 
+ factor(pident_frame$pca,levels = c("LULU", "dbotu a0","dbotu a10","xsingle"))
+
+tab_name <- file.path(main_path,"Table_OTU_match_rates_benchmarking.txt")
+{write.table(pident_frame, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+```

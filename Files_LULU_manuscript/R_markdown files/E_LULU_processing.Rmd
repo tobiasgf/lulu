@@ -1,0 +1,101 @@
+---
+title: "E - LULU processing"
+author: "Tobias G Frøslev"
+date: "11/5/2017" #Updated 28/6/2017
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This file records the processing of OTU tables with the LULU algorithm for the manuscript "Reliable biodiversity metrics from co-occurence based post-clustering curation of amplicon data". 20 (unprocessed) OTU tables and their corresponding files with representative sequences (centroids) have been constructed with different algorithms (VSEARCH, SWARM, DADA2 and DADA2+VSEARCH) and are now ready to be curated by the LULU algorithm.    
+
+This step should be carried out after the taxonomic filtering of primary OTU tables documentet in the file: D_Taxonomic_filtering.Rmd    
+NB: All markdown chuncks are set to "eval=FALSE". Change these accordingly. Also code blocks to be run outside R, has been #'ed out. Change this accordingly.  
+
+## Running the curation with LULU for all initial OTU tables produced with VSEARCH, SWARM, DADA2 and CROP 
+### Bioinformatic tools necessary
+Make sure that you have the following bioinformatic tools in your PATH  
+VSEARCH v.2.02 or later (https://github.com/torognes/vsearch)
+Blastn 2.4.0+ or later blastn v2.4.0+ (ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/).  
+LULU - (https://github.com/tobiasgf/lulu)
+
+###Provided scripts  
+A number of scripts are provided with this manuscript. Place these in you /bin directory and make them executable with "chmod 755 SCRIPTNAME"" or place the scripts in the directory/directories where they should be executed (i.e. the analyses directory)  
+Alfa_matchlist.sh  
+  
+###Analysis files  
+This step is dependent on the presence of otutables from the inital rounds.  
+
+Setting directories and libraries etc
+```{r, eval=FALSE}
+setwd("~/analyses")
+main_path <- "~/analyses" 
+path <- file.path(main_path, "otutables_processing")
+library(lulu)
+```
+
+###Producing match lists
+Match lists can be produced with different algorithms mathing all centroids against each other. Here we use blastn as this gives a better matching of erroneous sequences caused by "deletions/insertions" and/or sequences of unequal length. This task will take some time, as several of the datasets contain a high number of centroids.
+Produce match lists for all centroid files (xxx.plantcentroids)
+```{r, eval=FALSE}
+# bash Alfa_matchlist.sh
+```
+Now we have three matching files for each dataset (otutable (XXX.planttable),centroids (XXX.plantcentroids) and a match list (XXX.centroids.matchlist)). Now we can run the LULU algorithm for each otutable from each analyses using the file pairs XXX.planttable and XXX.centroids.matchlist
+
+###Running the LULU algorithm on the datasets
+Now we are ready to run the LULU algorithm on the datasets. The commands below uses the LULU algorithm as a function defined in the separate r source file, LULU.r.   
+Process the datasets with LULU
+```{r, eval=FALSE}
+allFiles <- list.files(path)
+allTabs <- allFiles[grepl("planttable$", allFiles)]
+allMls <- allFiles[grepl("matchlist$", allFiles)]
+tab_names <- sort(as.vector(
+ sapply(allTabs, function(x) strsplit(x, ".planttable")[[1]][1])))
+ml_names <- sort(as.vector(
+ sapply(allMls,function(x) strsplit(x,".plantcentroids.matchlist")[[1]][1])))
+
+if (!all(tab_names == ml_names)) {
+  stop("not mathing set of otutables and matchlists", call.=FALSE)
+}
+
+read_tabs <- file.path(path, allTabs)
+read_mls <- file.path(path, allMls)
+proc_files <- file.path(path, paste0("LULU-",tab_names))
+proc_tabs <- file.path(path, paste0(allTabs,"_luluprocessed"))
+# Vector for filtering... at this step redundant, but included for safety
+samples <- c("S001","S002","S003","S004","S005","S006","S007","S008","S067",
+             "S009","S010","S011","S012","S013","S014","S040","S068","S015",
+             "S016","S017","S018","S069","S070","S019","S020","S021","S022",
+             "S024","S025","S026","S027","S041","S028","S029","S030","S032",
+             "S033","S034","S035","S042","S036","S037","S038","S039","S086",
+             "S087","S088","S089","S044","S071","S045","S046","S047","S048",
+             "S049","S050","S051","S052","S053","S055","S056","S057","S058",
+             "S090","S059","S060","S061","S062","S063","S064","S065","S066",
+             "S072","S073","S074","S075","S076","S077","S078","S091","S079",
+             "S080","S081","S082","S083","S084","S085","S092","S094","S095",
+             "S096","S097","S098","S099","S100","S101","S102","S103","S104",
+             "S106","S107","S108","S109","S133","S110","S111","S112","S113",
+             "S114","S115","S116","S117","S118","S119","S120","S121","S122",
+             "S123","S124","S134","S125","S126","S127","S129","S130","S131",
+             "S132","S135","S136","S137")
+
+tab <- list()
+ml <- list()
+
+for(i in seq(1:length(read_tabs))) {
+  tab[[i]] <- read.csv(read_tabs[i],sep='\t',header=T,as.is=TRUE,row.names = 1)
+  tab[[i]] <- tab[[i]][which(rowSums(tab[[i]]) > 0),samples]
+  ml[[i]] <- read.csv(read_mls[i],sep='\t',header=F,as.is=TRUE)
+  proc_min <- lulu(tab[[i]],ml[[i]]) ## RUNNING LULU for each table
+  curated_table <- proc_min$curated_OTU_table ## extracting the curated table
+  saveRDS(proc_min,proc_files[i])
+  {write.table(curated_table, proc_tabs[i], sep="\t",quote=FALSE, 
+               col.names = NA)}
+}
+```
+Now we have a processed table ("XXX.planttable_luluprocessed") for each original table ("XXX.planttable"), and these can be compared.
