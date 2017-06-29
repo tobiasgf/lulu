@@ -54,7 +54,7 @@
 #'   \item \code{original_table} - original OTU table. }
 #' @examples
 #' lulu(my_table, my_matchlist)
-#' lulu(my_table, my_matchlist, minimum_ratio_type = "avg", minimum_match = 0.8, minimum_relative_cooccurence = 0.9)
+#' lulu(my_table, my_matchlist, minimum_ratio_type = "avg", minimum_match = 0.8, minimum_ratio = 10, minimum_relative_cooccurence = 0.9)
 #' @details The matchlist is the product of a mapping of OTU sequences against each other. This is
 #'   currently carried out by an external script in e.g. BLASTN or VSEARCH, prior to running \code{lulu}!
 #'   Producing the match list requires a file with all the OTU sequences (centroids) - e.g. \code{OTUcentroids.fasta}. The matchlist can be produced by mapping all OTUs against each other with an external algorithm like VSEARCH or BLASTN. In \code{VSEARCH} a matchlist can be produced e.g. with the following command: \code{vsearch --usearch_global OTUcentroids.fasta --db OTUcentroids.fasta --strand plus --self --id .80 --iddef 1 --userout matchlist.txt --userfields query+target+id --maxaccepts 0 --query_cov .9 --maxhits 10}. In \code{BLASTN} a matchlist can be produces e.g. with the following commands. First we produce a blast-database from the fasta file: \code{makeblastdb -in OTUcentroids.fasta -parse_seqids -dbtype nucl}, then we match the centroids against that database: \code{blastn -db OTUcentoids.fasta -num_threads 10 -outfmt'6 qseqid sseqid pident' -out matchlist.txt -qcov_hsp_perc .90 -perc_identity .84 -query OTUcentroids.fasta}

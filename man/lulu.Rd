@@ -4,8 +4,8 @@
 \alias{lulu}
 \title{Post Clustering Curation of Amplicon Data.}
 \usage{
-lulu(otutable, matchlist, abundance_threshold = "min", minimum_match = 84,
-  minimum_relative_cooccurence = 0.95)
+lulu(otutable, matchlist, minimum_ratio_type = "min", minimum_ratio = 1,
+  minimum_match = 84, minimum_relative_cooccurence = 0.95)
 }
 \arguments{
 \item{otutable}{a data.frame with with an OTU table that has sites/samples as
@@ -18,7 +18,7 @@ between the sequences of the potential parent and potential child OTUs.
 \strong{NB: The matchlist is the product of a mapping of OTU sequences against each other. This is
 currently carried out by an external script in e.g. Blastn or VSEARCH, prior to running lulu!}}
 
-\item{abundance_threshold}{sets whether a potential error must have lower
+\item{minimum_ratio_type}{sets whether a potential error must have lower
 abundance than the parent in all samples \code{min} (default), or if an error
 just needs to have lower abundance on average \code{avg}. Choosing lower
 abundance on average over globally lower abundance will greatly increase
@@ -26,6 +26,13 @@ the number of designated errors. This option was introduced to make it
 possible to account for non-sufficiently clustered intraspecific variation,
 but is not generally recommended, as it will also increase the potential of
 cluster well-separated, but co-occuring, sequence similar species.}
+
+\item{minimum_ratio}{sets the minimim abundance ratio between a potential error
+and a potential parent to be identified as an error. If the \code{minimum_ratio_type} is
+set to \code{min} (default), the \code{minimum_ratio} applies to the lowest observed
+ration across the samples.  If the \code{minimum_ratio_type} is
+set to \code{avg} (default), the \code{minimum_ratio} applies to the mean of observed
+ration across the samples.\code{avg}. (default is 1).}
 
 \item{minimum_match}{minimum threshold of sequence similarity
 for considering any OTU as an error of another can be set (default 84\%).}
@@ -71,7 +78,7 @@ The matchlist is the product of a mapping of OTU sequences against each other. T
 }
 \examples{
 lulu(my_table, my_matchlist)
-lulu(my_table, my_matchlist, abundance_threshold = "avg", minimum_match = 0.8, minimum_relative_cooccurence = 0.9)
+lulu(my_table, my_matchlist, minimum_ratio_type = "avg", minimum_match = 0.8, minimum_ratio = 10, minimum_relative_cooccurence = 0.9)
 }
 \author{
 Tobias Guldberg Frøslev
