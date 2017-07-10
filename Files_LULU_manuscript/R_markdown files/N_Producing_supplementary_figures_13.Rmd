@@ -56,7 +56,7 @@ centroid_df <- data.frame(centroid = otus, sequence = seqs)
 
 investigated_taxa <- c("Acer","Alnus","Avenella","Calamagrostis",
                        "Calluna","Centaurea","Cerastium","Erica","Fagus",
-                       "Filipendula","Holcus","Lolium","Lysimachia","Menyanthes",
+                       "Filipendula","Holcus","Littorella","Lysimachia","Menyanthes",
                        "Plantago","Poa")
 ampmatrices <- list()
 for (tt in 1:length(investigated_taxa)){
@@ -123,165 +123,168 @@ taxon_plot[[tt]] <- ggplot(filtered_matr_processed,aes(pident/100,abundance,col=
 ```
 
 
-**Curation effect on OTUs assigned to Acer**   
+**Curation effect on OTUs assigned to** **_Acer_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[1]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13. Curation effect on OTUs assigned to selected genera - general information.** Abundance (total read count of OTU) is plotted on the y-axis (logarithmic). Best match on GenBank is plotted on the x-axis. Blue points represent OTUs discarded by LULU (i.e. OTUs found only in the initial, uncurated OTU tables), and red points represent OTUs retained by LULU curation, shapes represent species annotation according to best reference database match (GenBank). The “99/100%” clustering level denotes the pure DADA2 approach (100%) and SWARM with a d-value of 3 (99%). Data for the following genera are shown: a) Acer, b) Alnus, c) Avenella, d) Calamagrostis, e) Calluna, f) Centaurea, g) Cerastium, h) Erica, i) Fagus, j) Filipendula, k) Holcus, l) Lolium, m) Lysimachia, n) Menyanthes, o) Plantago, p) Poa.  
-**Figure 13a.** Curation effect on all OTUs assigned to the genus Acer. Three species of Acer (A. campestre, A. pseudoplatanus and A. platanoides) were registrered in the plant survey. Curation resulted in accurate diversity measures (except for CROP) and the annotation was also correct for two of the species. The third OTU imperfectly assigned to Acer_mandshuricum probably indicates that no perfect match for the third species (A. platanoides) was found in the reference data.     
+**Figure 13. Curation effect on OTUs assigned to selected genera.** General information: Log abundance (total read count of OTU) is plotted on the y-axis. Best match on GenBank is plotted on the x-axis. Blue points represent OTUs discarded by LULU (i.e. OTUs found only in the initial, uncurated OTU tables), and red points represent OTUs retained by the LULU curation, shapes represent species annotations according to best reference database match (GenBank). The “99/100%” clustering level denotes the pure DADA2 approach (100%) and SWARM with a d-value of 3 (99%). Data for the following genera are shown: a) *Acer*, b) *Alnus*, c) *Avenella*, d) *Calamagrostis*, e) *Calluna*, f) *Centaurea*, g) *Cerastium*, h) *Erica*, i) *Fagus*, j) *Filipendula*, k) *Holcus*, l) *Littorella*, m) *Lysimachia*, n) *Menyanthes*, o) *Plantago*, and p) *Poa*.
+**Figure 13a.** Curation effect on all OTUs assigned to the genus *Acer*. Three species of *Acer* (*A. campestre, A. pseudoplatanus* and *A. platanoides*) were recorded in the plant survey. Curation resulted in accurate diversity measures (except for CROP) and the annotation was also correct for two of the species. The third OTU imperfectly assigned to *Acer mandshuricum* probably indicates that no perfect match for the third species (*A. platanoides*) was found in the reference database.  
+
 
 \pagebreak  
 
 
-**Curation effect on OTUs assigned to Alnus**   
+**Curation effect on OTUs assigned to** **_Alnus_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[2]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13b.** Curation effect on all OTUs assigned to the genus Alnus. One species of Alnus (A. glutinosa) was registrered in the plant survey. Curation resulted in accurate diversity measures and correct annotation except for CROP, where only the 98% approach correlated with expectations from the survey and the other methods. (Refer to Figure 13a for general information)    
+**Figure 13b.** Curation effect on all OTUs assigned to the genus *Alnus*. One species of Alnus (*A. glutinosa*) was recorded in the plant survey. Curation resulted in accurate diversity measures and correct annotation, except for CROP, where only the 98% approach correlated with expectations from the survey and the other methods. (Refer to Figure 13a for general information).  
+
 
 \pagebreak  
 
 
-**Curation effect on OTUs assigned to Avenella**   
+**Curation effect on OTUs assigned to** **_Avenella_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[3]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13c.** Curation effect on all OTUs assigned to the genus Avenella. One species of Avenella (A. flexuosa) was registrered in the plant survey. Curation resulted in accurate diversity measures and correct annotation except for 'DADA2-100%' and 'CROP-95%' both finding too many OTUs. (Refer to Figure 13a for general information)        
+**Figure 13c.** Curation effect on all OTUs assigned to the monotypic genus *Avenella*. The single species of *Avenella* (*A. flexuosa*) was recorded in the plant survey. Curation resulted in accurate diversity measures and correct annotation, except for 'DADA2-100%' and 'CROP-95%' both finding too many OTUs. (Refer to Figure 13a for general information).  
 
 \pagebreak  
 
 
-**Curation effect on OTUs assigned to Calamagrostis**   
+**Curation effect on OTUs assigned to** **_Calamagrostis_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[4]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13d.** Curation effect on all OTUs assigned to the genus Calamagrostis. Two species of Calamagrostis (C. canescens and C. epigeios) were registrered in the plant survey. Curation resulted in accurate diversity measures and correct annotation except for extreme clustering levels, and for CROP. In most approaches far too many OTUs and species names were indentified in the un-curated data. (Refer to Figure 13a for general information)        
+**Figure 13d.** Curation effect on all OTUs assigned to the genus *Calamagrostis*. Two species of *Calamagrostis* (*C. canescens* and *C. epigeios*) were recorded in the plant survey. Curation resulted in accurate diversity measures and correct annotation, except for extreme clustering levels and for CROP. In most approaches, far too many OTUs and species names were identified in the un-curated data. (Refer to Figure 13a for general information).  
 
 \pagebreak  
 
 
-**Curation effect on OTUs assigned to Calluna**   
+**Curation effect on OTUs assigned to** **_Calluna_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[5]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13e.** Curation effect on all OTUs assigned to the genus Calluna. One species of Calluna (C. vulgaris) was registrered in the plant survey. Curation resulted in accurate diversity measures and correct annotation except for 'DADA2-100%', 'CROP-95%' and 'CROP-98%'. In most approaches far too many OTUs were indentified in the un-curated data, although they all received the same annotation. (Refer to Figure 13a for general information)        
+**Figure 13e.** Curation effect on all OTUs assigned to the monotypic genus *Calluna*. The single species of *Calluna* (*C. vulgaris*) was recorded in the plant survey. Curation resulted in accurate diversity measures and correct annotation, except for 'DADA2-100%', 'CROP-95%' and 'CROP-98%'. In most approaches far too many OTUs were identified in the un-curated data, although they all received the same annotation. (Refer to Figure 13a for general information).  
 
 \pagebreak  
 
 
-**Curation effect on OTUs assigned to Centaurea**   
+**Curation effect on OTUs assigned to** **_Centaurea_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[6]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13f.** Curation effect on all OTUs assigned to the genus Centaurea. Three species of Centaurea (C. cyanus,	C. jacea,	C. scabiosa) were registrered in the plant survey. CROP did only identify one species in one approach (98%) Despite suboptimal annotation (only one name match, C. scabiosa), the richness estimates were improve by curation. (Refer to Figure 13a for general information)      
+**Figure 13f.** Curation effect on all OTUs assigned to the genus *Centaurea*. Three species of *Centaurea* (*C. cyanus, C. jacea* and *C. scabiosa*) were recorded in the plant survey. CROP did only identify one species in one approach (98%). Despite suboptimal annotation (only one name match, *C. scabiosa*), the richness estimates were improved by curation. (Refer to Figure 13a for general information).  
 
 \pagebreak  
 
 
 
-**Curation effect on OTUs assigned to Cerastium**   
+**Curation effect on OTUs assigned to** **_Cerastium_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[7]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13g.** Curation effect on all OTUs assigned to the genus Cerastium. Two taxa of Cerastium (C. fontanum ssp. vulgare var. vulgare and	C. semidecandrum) were registrered in the plant survey. 'CROP 98%' performed better that the two other clustering levels for that method. Curation resulted in better richness estimates for the other approaches, despite deviations in the names between plant survey and OTU for one species. Seemingly, initial clustering levels of 95%, 96% and 97% were too rough as one of the supposed good OTUs were lost. (Refer to Figure 13a for general information)      
+**Figure 13g.** Curation effect on all OTUs assigned to the genus *Cerastium*. Two taxa of *Cerastium* (*C. fontanum* ssp. *vulgare* var. *vulgare* and *C. semidecandrum*) were recorded in the plant survey. 'CROP 98%' performed better that the two other clustering levels for that method. Curation resulted in better richness estimates for the other approaches, despite deviations in the names between plant survey and OTU for one species. Seemingly, initial clustering levels of 95%, 96% and 97% were too restrictive, as one of the supposed ‘good’ OTUs was lost. (Refer to Figure 13a for general information).  
 
 \pagebreak  
 
 
-**Curation effect on OTUs assigned to Erica**   
+**Curation effect on OTUs assigned to** **_Erica_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[8]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13h.** Curation effect on all OTUs assigned to the genus Erica. One species (E. tetralix) was registrered in the plant survey. CROP retained suboptimal OTUs with a different abundance and/or number than the other methods. Curation resulted in accurate richness and annotation for the other methods. DADA2+VSEARCH performed accutate without curation for clustering levels 97%, 96% and 95%. (Refer to Figure 13a for general information)      
+**Figure 13h.** Curation effect on all OTUs assigned to the genus *Erica*. One species (*E. tetralix*) was recorded in the plant survey. CROP retained suboptimal OTUs with a different abundance and/or number than the other methods. Curation resulted in accurate richness and annotation for the other methods. DADA2+VSEARCH performed accurately without curation for clustering levels 97%, 96% and 95%. (Refer to Figure 13a for general information).  
 
 \pagebreak  
 
-**Curation effect on OTUs assigned to Fagus**   
+**Curation effect on OTUs assigned to** **_Fagus_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[9]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13i.** Curation effect on all OTUs assigned to the genus Fagus. One species (F. sylvatica) was registrered in the plant survey. CROP initially found the most realistic number of OTUs, despite selecting a suboptimal sequence in the 97% setting, and one OTU impervious to curation in the 98% setting. The single OTU with a 100% match with a read abundance of around 10 (in VSEARCH, DADA2 and SWARM) impervious to curation was in fact a fungal sequence wrongly annotated as Fagus in GenBank. As this fungal sequence had distribution and abundance pattern contrasting that of Fagus, it was not discarded. Curation made the richness significantly more realistic for all approaches, although the SWARM method still had several redundant OTUs after duration. (Refer to Figure 13a for general information)      
+**Figure 13i.** Curation effect on all OTUs assigned to the genus *Fagus*. One species (*F. sylvatica*) was recorded in the plant survey. CROP initially found the most realistic number of OTUs, despite selecting a suboptimal sequence in the 97% setting, and one OTU impervious to curation in the 98% setting. The single OTU with a 100% match with a read abundance of around 10 (in VSEARCH, DADA2 and SWARM), impervious to curation, was in fact a fungal sequence mathcing a reference in GenBank erroneously annotated as *Fagus*. As this fungal sequence had distribution and abundance pattern contrasting that of Fagus, it was not discarded. Curation made the richness significantly more realistic for all approaches, although the SWARM method retained several redundant OTUs after duration. (Refer to Figure 13a for general information).  
 
 \pagebreak  
 
 
-**Curation effect on OTUs assigned to Filipendula**   
+**Curation effect on OTUs assigned to** **_Filipendula_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[10]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13j.** Curation effect on all OTUs assigned to the genus Filipendula. One species (F. ulmaria	and F. vulgaris) was registrered in the plant survey. CROP identified too few and suboptimal OTUs. Curation resulted in accurate taxonomic composition and richness for the other methods, that all identified too many OTUs at all levels. (Refer to Figure 13a for general information)       
+**Figure 13j.** Curation effect on all OTUs assigned to the genus *Filipendula*. Two species of *Filipendula* (*F. ulmaria* and *F. vulgaris*) were recorded in the plant survey. CROP identified too few and suboptimal OTUs. Curation resulted in accurate taxonomic composition and richness for the other methods, which all identified too many OTUs at all levels. (Refer to Figure 13a for general information).  
+
 
 \pagebreak  
 
 
 
 
-**Curation effect on OTUs assigned to Holcus**   
+**Curation effect on OTUs assigned to** **_Holcus_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[11]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13k.** Curation effect on all OTUs assigned to the genus Holcus. Two species (H. lanatus and	H. mollis) were registrered in the plant survey. CROP identified too few and suboptimal OTUs. Curation resulted in accurate richness for the other methods at clustering levels of 97% and up. Both retained OTUs were assigned to H. lanatus, one perfectly and the other with lower match, probably due to the other species not being present in the reference data. (Refer to Figure 13a for general information)      
+**Figure 13k.** Curation effect on all OTUs assigned to the genus *Holcus*. Two species (*H. lanatus* and *H. mollis*) were recorded in the plant survey. CROP identified too few and suboptimal OTUs. Curation resulted in accurate richness estimates for the other methods at clustering levels of 97% and upwards. Both retained OTUs were assigned to *H. lanatus*, one perfectly and the other with lower match, probably due to H. mollis not being represented in the reference database. (Refer to Figure 13a for general information).  
 
 \pagebreak  
 
 
-**Curation effect on OTUs assigned to Lolium**   
+**Curation effect on OTUs assigned to** **_Littorella_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[12]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13l.** Curation effect on all OTUs assigned to the genus Lolium. One species (L. perenne) was registrered in the plant survey. CROP did not identify any OTUs in this genus. The other approaches initially identified too many OTUs at all clustering levels. Curation resulted in accurate richness, with DADA2 identifying one OTU too much - potentially a related species (in another genus, but not present in the reference data). (Refer to Figure 13a for general information)      
+**Figure 13l.** Curation effect on all OTUs assigned to the genus *Littorella*, which is sometimes considered a part of *Plantago* (see below for data on *Plantago*). One species (*L. uniflora*) is known from the study area and was recorded in the plant survey. All approaches identified the correctly annotated species, but only 'CROP-95%' did not identify any extra OTUs. The other approaches initially identified too many OTUs at all clustering levels. Curation resulted in accurate richness for all approaches. (Refer to Figure 13a for general information).  
 
 \pagebreak  
 
 
-**Curation effect on OTUs assigned to Lysimachia**   
+**Curation effect on OTUs assigned to** **_Lysimachia_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[13]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13m.** Curation effect on all OTUs assigned to the genus Lysimachia. Two species (L. thyrsiflora and	L. vulgaris) were registrered in the plant survey. Except for CROP, curation resulted in accurate taxonomic composition and richness for all methods, that initially identified too many OTUs at all levels. (Refer to Figure 13a for general information)      
+**Figure 13m.** Curation effect on all OTUs assigned to the genus *Lysimachia*. Two species (*L. thyrsiflora* and *L. vulgaris*) were recorded in the plant survey. Except for CROP, curation resulted in accurate taxonomic composition and richness for all methods, which all initially identified too many OTUs at all levels. (Refer to Figure 13a for general information).  
 
 \pagebreak  
 
 
-**Curation effect on OTUs assigned to Menyanthes**   
+**Curation effect on OTUs assigned to** **_Menyanthes_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[14]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13n.** Curation effect on all OTUs assigned to the genus Menyanthes. One species (M. trifoliate) was registrered in the plant survey. All methods initially identified too many OTUs despite correct annotation. Curation resulted in accurate richness for all methods except 'CROP-97%' with one OTU too much. (Refer to Figure 13a for general information)      
+**Figure 13n.** Curation effect on all OTUs assigned to the monotypic genus *Menyanthes*. The single species of *Menyanthes* (*M. trifoliata*) was recorded in the plant survey. All methods initially identified too many OTUs, despite correct annotation. Curation resulted in accurate richness for all methods except 'CROP-97%' with one OTU too much. (Refer to Figure 13a for general information).  
 
 \pagebreak  
 
 
-**Curation effect on OTUs assigned to Plantago**   
+**Curation effect on OTUs assigned to** **_Plantago_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[15]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13o.** Curation effect on all OTUs assigned to the genus Plantago. Three species (P. lanceolata,	P. major and	P. maritima) were registrered in the plant survey. CROP selected suboptimal OTUs and/or too few. Curation resulted in accurate richness and annotation for all other methods. DADA2-95% and VSEACRH-95% performed accurate without curation also. (Refer to Figure 13a for general information)       
+**Figure 13o.** Curation effect on all OTUs assigned to the genus *Plantago*. Three species (*P. lanceolata, P. major* and *P. maritima*) were recorded in the plant survey (for data on *Littorella* uniflora (=*P. uniflora*) see above). CROP selected suboptimal OTUs and/or too few. Curation resulted in accurate richness and annotation for all other methods. DADA2-95% and VSEACRH-95% performed accurate without curation also. (Refer to Figure 13a for general information).  
 
 \pagebreak  
 
 
-**Curation effect on OTUs assigned to Poa**   
+**Curation effect on OTUs assigned to** **_Poa_**   
 ```{r dpi=300,echo=FALSE, message=F}
 taxon_plot[[16]] + scale_shape_manual(values=1:25)
 ```
 
-**Figure 13p.** Curation effect on all OTUs assigned to the genus Poa. Five species (P. annua,	P. compressa,	P. nemoralis,	P. pratensis,	P. trivialis) were registrered in the plant survey. Grasses often pose problems in molecular identification. Here curation resulted in a very good correspondence between whta could be expected from the survey, despite richness being slightly underestimated (4/5) in most approaches and one/two differently identified species. CROP deviated from the other approaches by selecting fewer and other OTUs. (Refer to Figure 13a for general information)      
+**Figure 13p.** Curation effect on all OTUs assigned to the genus *Poa*. Five species of *Poa* (*P. annua, P. compressa, P. nemoralis, P. pratensis* and *P. trivialis*) were recorded in the plant survey. Grasses often pose problems in molecular identification. Here, curation resulted in a very good correspondence between what could be expected from the plant survey, despite richness being slightly underestimated (4 out of five 5 species) in most approaches and one or two ill-assigned species. CROP deviated from the other approaches by selecting fewer and other OTUs. (Refer to Figure 13a for general information).  
 
 \pagebreak  
 
