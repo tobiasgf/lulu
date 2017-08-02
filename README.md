@@ -4,6 +4,15 @@ A r-package for distribution based post clustering curation of amplicon data.
 
 The purpose of **LULU** is to reduce the number of erroneous OTUs in OTU tables to achieve more realistic biodiversity metrics. By evaluating the co-occurence patterns of OTUs among samples **LULU** identifies OTUs that consistently satisfy some user selected criteria for being errors of more abundant OTUs and merges these. It has been shown that curation with **LULU** consistently result in more realistic diversity metrics. The required input of **LULU** is an OTU table and a corresponding matchlist with all the internal matches of OTUs.   
 
+##Requirements/pre-requisites
+___
+To be able to run the LULU algorithm the following things are needed:  
+1. R (or R-studio) - LULU was developed in R version 3.3.2.  
+2. LULU r-package (see below for installation).  
+3. An OTU table - produced with any algorithm (see below for format etc).  
+4. OTU sequences - a file with representavei sequence of each OTU (see below for format etc.).    
+5. Access to a tool for making a match list (see below, e.g. BLASTn or VSEARCH).  
+
 ## Practical workflow
 ___
 These are the steps carried out by the user to produce a curated OTU table:  
