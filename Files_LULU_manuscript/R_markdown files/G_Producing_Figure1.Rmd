@@ -160,7 +160,7 @@ Plot97_pident_violin <-
   guides(fill=guide_legend(title="OTUs"))
 ```
 
-Make display taxonomic dissimilarity plots
+Make display taxonomic dissimilarity plots (excluded due to reviewer input, replaced by new section "taxonomic composition")
 ```{r, eval=FALSE}
 tab_name <- file.path(main_path,"Table_taxonomic_dissimilatiry_long.txt")
 gathered_dissimilarity_long <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
@@ -197,11 +197,16 @@ p4 <- Plot97_beta + theme(legend.position="none")
 p5 <- Plot97_pident_violin + theme(legend.position="none")
 p6 <- Plot97_dissim + theme(legend.position="none")
 
-Composite_plot <- plot_grid(p1,p2,p3,p4,p5,p6, align = "v", 
-                            nrow = 6, ncol=1, rel_heights = c(5.5, 2, 2, 2, 3,2),
-                            labels = c("a","b","c","d","e","f"))
+#plot p6 excluded in revision based on reviewer input
+#Composite_plot <- plot_grid(p1,p2,p3,p4,p5,p6, align = "v", 
+#                           nrow = 6, ncol=1, rel_heights = c(5.5, 2, 2, 2, 3,2),
+#                           labels = c("a","b","c","d","e","f"))
 
-ggsave("Fig1_rev1.pdf", Composite_plot, width=6, height=11)
+Composite_plot <- plot_grid(p1,p2,p3,p4,p5, align = "v", 
+                            nrow = 5, ncol=1, rel_heights = c(5.5, 2, 2, 2, 3),
+                            labels = c("a","b","c","d","e"))
+
+ggsave("Fig1_rev2.pdf", Composite_plot, width=6, height=11)
 
 ```
 

@@ -1,0 +1,236 @@
+---
+title: "F - Plot wise curation statistics"
+author: "Tobias G Frøslev"
+date: "8/8/2017"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This file records the calculation of plotwise taxonomic composition for the manuscript "Reliable biodiversity metrics from post clustering curation of amplicon data".  
+
+This step should be carried out after the LULU curation of the OTU tables documented in the file: E_Taxonomic_filtering.Rmd    
+NB: All markdown chuncks are set to "eval=FALSE". Change these accordingly. Also code blocks to be run outside R, has been #'ed out. Change this accordingly.
+
+### Bioinformatic tools necessary
+Make sure that you have the following bioinformatic tools in your PATH  
+R packages: stringr  
+  
+###Analysis files  
+This step is dependent on the presence of OTU tables (un-curated tables and the corresponding tables curated with LULU)  
+
+Setting directories and libraries etc
+```{r, eval=FALSE}
+setwd("~/analyses")
+setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
+main_path <- getwd()
+path <- file.path(main_path, "otutables_processing")
+library(stringr)
+```
+
+
+```{r, eval=FALSE}
+allFiles <- list.files(path)
+all_plTabs <- allFiles[grepl("planttable$", allFiles)]
+all_prTabs <- allFiles[grepl("planttable.luluprocessed$", allFiles)]
+all_Tabs <-  c(all_plTabs,all_prTabs)
+read_tabs <- file.path(path, all_Tabs)
+# Vector for filtering, etc. at this step redundant, but included for safety
+samples <- c("S001","S002","S003","S004","S005","S006","S007","S008","S067",
+             "S009","S010","S011","S012","S013","S014","S040","S068","S015",
+             "S016","S017","S018","S069","S070","S019","S020","S021","S022",
+             "S024","S025","S026","S027","S041","S028","S029","S030","S032",
+             "S033","S034","S035","S042","S036","S037","S038","S039","S086",
+             "S087","S088","S089","S044","S071","S045","S046","S047","S048",
+             "S049","S050","S051","S052","S053","S055","S056","S057","S058",
+             "S090","S059","S060","S061","S062","S063","S064","S065","S066",
+             "S072","S073","S074","S075","S076","S077","S078","S091","S079",
+             "S080","S081","S082","S083","S084","S085","S092","S094","S095",
+             "S096","S097","S098","S099","S100","S101","S102","S103","S104",
+             "S106","S107","S108","S109","S133","S110","S111","S112","S113",
+             "S114","S115","S116","S117","S118","S119","S120","S121","S122",
+             "S123","S124","S134","S125","S126","S127","S129","S130","S131",
+             "S132","S135","S136","S137")  
+
+tab_name <- file.path(main_path,"Table_otu_taxonomy_plant_levels.txt")
+otutaxonomy <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+
+tab_name <- file.path(main_path,"Table_plants_2016_alfa.txt") 
+Plant_data2016 <- read.table(tab_name, sep="\t", row.names = 1, header=TRUE, as.is=TRUE)
+
+plant_obs_species <- list()
+for (i in 1:130){
+ plant_obs_species[[i]] <- rownames(Plant_data2016)[which(Plant_data2016[,i] == 1)]
+}
+
+otu_taxa_method <- list()
+
+no_OTUsUU <- data.frame(matrix(NA, ncol = 130,  nrow= length(all_Tabs)))
+perfectmatchesUU <- data.frame(matrix(NA, ncol = 130,  nrow= length(all_Tabs)))
+refindsUU <- data.frame(matrix(NA, ncol = 130,  nrow= length(all_Tabs)))
+unknownUU <- data.frame(matrix(NA, ncol = 130,  nrow= length(all_Tabs)))
+redundantUU <- data.frame(matrix(NA, ncol = 130,  nrow= length(all_Tabs)))
+imperfectUU <- data.frame(matrix(NA, ncol = 130,  nrow= length(all_Tabs)))
+
+refound_species <- list()
+
+  for(i in seq_along(read_tabs)) {
+   tab <- read.csv(read_tabs[i],sep='\t',header=T,as.is=TRUE,row.names = 1) #read table
+   tab <- tab[,samples] # order samples
+
+   otu_taxa_methodX <- list()
+   Num_otu_taxa_methodX <- rep(0, 130)
+   refound_species_site <- list()
+   for (io in 1:130){
+    amp_index <- row.names(tab)[which(tab[,io] > 0)] #OTU id's of current table
+    
+    no_OTUsUU[i,io] <- length(amp_index)
+    
+    reftaxindex <- which(otutaxonomy$qseqid %in% amp_index) # index of which OTUs are present in the current table
+    perfect_match_index <- which(otutaxonomy$pident == 100 & otutaxonomy$qseqid %in% amp_index) # index of which OTUs are present in the current
+    perfectmatchesUU[i,io] <- length(perfect_match_index)
+    if (length(perfect_match_index) > 0) {
+     otu_taxa_methodX[[io]] <- names(table(otutaxonomy$species[perfect_match_index])) #Which species names have been identified in the current table
+     if (length(otu_taxa_methodX[[io]]) > 0) {
+      Num_otu_taxa_methodX[io] <- length(otu_taxa_methodX[[io]])
+      refindsUU[i,io] <- sum(otu_taxa_methodX[[io]] %in% plant_obs_species[[io]])
+      refound_species_site[[io]] <- otu_taxa_methodX[[io]][otu_taxa_methodX[[io]] %in% plant_obs_species[[io]]]
+       unknownUU[i,io] <- sum(!otu_taxa_methodX[[io]] %in% plant_obs_species[[io]])
+      redundantUU[i,io] <- perfectmatchesUU[i,io] - (refindsUU[i,io]+unknownUU[i,io])
+      imperfectUU[i,io] <- no_OTUsUU[i,io] - perfectmatchesUU[i,io]
+     }
+    }
+    refound_species[[i]] <- refound_species_site
+   }
+  }
+  
+#Calculating average plot wise curation effects
+perfect_match_share <- perfectmatchesUU/no_OTUsUU
+perfect_match_share_sd <- apply(perfect_match_share,1,sd,na.rm=TRUE)
+perfect_match_share_mean <- apply(perfect_match_share,1,mean,na.rm=TRUE)
+
+imperfect_share <- imperfectUU/no_OTUsUU
+imperfect_share_sd <- apply(imperfect_share,1,sd,na.rm=TRUE)
+imperfect_share_mean <- apply(imperfect_share,1,mean,na.rm=TRUE)
+
+refinds_share <- refindsUU/no_OTUsUU
+refinds_share_sd <- apply(refinds_share,1,sd,na.rm=TRUE)
+refinds_share_mean <- apply(refinds_share,1,mean,na.rm=TRUE)
+
+unknown_share <- unknownUU/no_OTUsUU
+unknown_share_sd <- apply(unknown_share,1,sd,na.rm=TRUE)
+unknown_share_mean <- apply(unknown_share,1,mean,na.rm=TRUE)
+
+redundant_share <- redundantUU/no_OTUsUU
+redundant_share_sd <- apply(redundant_share,1,sd,na.rm=TRUE)
+redundant_share_mean <- apply(redundant_share,1,mean,na.rm=TRUE)
+
+refinds_lost <- (refindsUU[1:20,]-refindsUU[21:40,])/refindsUU[1:20,]
+refinds_lost[is.na(refinds_lost)] <- 0
+refinds_lost_sd <- apply(refinds_lost,1,sd,na.rm=TRUE)
+refinds_lost_mean <- apply(refinds_lost,1,mean,na.rm=TRUE)
+
+method <- str_split_fixed(all_Tabs, "_", 3)[,1]
+method[method == "DADA2"] <- "DADA2(+VS)"
+method[method == "DADA2VSEARCH"] <- "DADA2(+VS)"
+level <- str_split_fixed(all_Tabs, "_", 3)[,2]
+level <- gsub(".planttable","",level)
+level[level == "0.95"] <- "95"
+level[level == "0.96"] <- "96"
+level[level == "0.97"] <- "97"
+level[level == "0.98"] <- "98"
+level[level == "0.985"] <- "98.5"
+level[level == "NO"] <- "99/100"
+level[level == "3"] <- "99/100"
+level[level == "5"] <- "98.5"
+level[level == "7"] <- "98"
+level[level == "10"] <- "97"
+level[level == "13"] <- "96"
+level[level == "15"] <- "95"
+level <- factor(level,levels = c("99/100", "98.5", "98", "97", "96", "95"))
+
+#identify LULU curated tables
+processed <- str_split_fixed(all_Tabs, "_", 3)[,3]
+luluindex <- which(processed == "luluprocessed")
+processed[luluindex] <- "curated"
+processed[-luluindex] <- "raw"
+
+#Merge all results in one table
+curation_stats <- data.frame(Method=method,Level=level,
+                                Curated=processed,
+                             perfect_match_share_mean, perfect_match_share_sd, 
+                             refinds_share_mean, refinds_share_sd,
+                             unknown_share_mean,unknown_share_sd,
+                             redundant_share_mean, redundant_share_sd,
+                             imperfect_share_mean, imperfect_share_sd,
+                             refinds_lost_mean,refinds_lost_sd)
+
+tab_name <- file.path(main_path,"Table_plot_curation_statistics_revision3.txt")
+{write.table(curation_stats, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+
+tab_name <- file.path(main_path,"Table_plot_curation_statistics_revision3.txt")
+plot_curation_statistics <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+
+plot_curation_statistics$Level <- 
+ factor(plot_curation_statistics$Level,levels = c("99/100", "98.5", "98", "97", 
+                                           "96", "95"))
+plot_curation_statistics$Method <- 
+ factor(plot_curation_statistics$Method,levels = c("CROP","DADA2(+VS)","SWARM","VSEARCH"))
+plot_curation_statistics$Curated <- 
+ factor(plot_curation_statistics$Curated,levels = c("raw","curated"))
+
+plot_curation_statistics <- plot_curation_statistics[with(plot_curation_statistics, order(Curated,Method,Level)),]
+
+plot_curation_statistics[is.na(plot_curation_statistics)] <- 0
+
+t_method <- plot_curation_statistics$Method[1:20]
+t_level <- paste0(plot_curation_statistics$Level[1:20],"%")
+
+t_refinds <- paste0(as.character(round(plot_curation_statistics$refinds_share_mean[1:20],2)), "±", 
+                    as.character(round(plot_curation_statistics$refinds_share_sd[1:20],2)) , " / ",
+                as.character(round(plot_curation_statistics$refinds_share_mean[21:40],2)), "±",
+                as.character(round(plot_curation_statistics$refinds_share_sd[21:40],2)))
+
+t_unknown <- paste0(as.character(round(plot_curation_statistics$unknown_share_mean[1:20],2)), "±", 
+                    as.character(round(plot_curation_statistics$unknown_share_sd[1:20],2)) , " / ",
+                as.character(round(plot_curation_statistics$unknown_share_mean[21:40],2)), "±",
+                as.character(round(plot_curation_statistics$unknown_share_sd[21:40],2)))
+
+t_redundant <- paste0(as.character(round(plot_curation_statistics$redundant_share_mean[1:20],2)), "±", 
+                    as.character(round(plot_curation_statistics$redundant_share_sd[1:20],2)) , " / ",
+                as.character(round(plot_curation_statistics$redundant_share_mean[21:40],2)), "±",
+                as.character(round(plot_curation_statistics$redundant_share_sd[21:40],2)))
+
+t_imperfect <- paste0(as.character(round(plot_curation_statistics$imperfect_share_mean[1:20],2)), "±", 
+                    as.character(round(plot_curation_statistics$imperfect_share_sd[1:20],2)) , " / ",
+                as.character(round(plot_curation_statistics$imperfect_share_mean[21:40],2)), "±",
+                as.character(round(plot_curation_statistics$imperfect_share_sd[21:40],2)))
+
+t_refinds_lost <- paste0(as.character(round(plot_curation_statistics$refinds_lost_mean[1:20],2)), "±", 
+                    as.character(round(plot_curation_statistics$refinds_lost_sd[1:20],2)))
+
+main_table <- data.frame(Method=t_method, Level=t_level, Imperfect_matches=t_imperfect, Refinds=t_refinds, Unknown=t_unknown, Redundant=t_redundant, Lost=t_refinds_lost)
+
+tab_name <- file.path(main_path,"Table2_rev2x.txt")
+{write.table(main_table, tab_name, sep="\t",quote=FALSE, col.names = NA)}
+
+```
+
+```{r}
+#Not used. Can be used to evaluate the specific species being lost and kept pr site.
+lost_species <- list()
+kept_species <- list()
+for (o in 1:20){
+ for (i in 1:130){
+ lost_species[[i]] <- refound_species[[o]][[i]][!refound_species[[o]][[i]] %in% refound_species[[o]][[i]]]
+ kept_species[[i]] <- refound_species[[o]][[i]][refound_species[[o]][[i]] %in% refound_species[[o]][[i]]]
+ }
+}
+```
+

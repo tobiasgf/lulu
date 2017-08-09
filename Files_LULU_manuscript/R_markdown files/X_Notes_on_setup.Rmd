@@ -76,6 +76,7 @@ K_Benchmarking_dbotu3_curation_and_singleton_culling.Rmd
 L_Producing_supplementary_figures_7_12.Rmd  
 M_Producing_supplementary_tables.Rmd  
 N_Producing_supplementary_figures_13.Rmd  
+O_Calculating_plotwise__taxonomic_composition_statistics.Rmd  
   
 X_setup_notes.Rmd - (this file).  
     
