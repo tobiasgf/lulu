@@ -21,7 +21,6 @@ NB: All markdown chuncks are set to "eval=FALSE". Change these accordingly. Also
 Setting directories and libraries etc
 ```{r, eval=FALSE}
 setwd("~/analyses")
-setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
 main_path <- getwd() 
 path <- file.path(main_path, "otutables_processing")
 library(stringr)

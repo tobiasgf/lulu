@@ -58,6 +58,6 @@ Now we have 3 fasta files  (pcr triplicates) with dereplicated reads assigned to
 ###Merge the three replicates
 We are not interested in the informmation from separate PCRs in these analyses, and hence we pool all files belonging to the same sample. This script will put all the single replicates in a new directory, and make a new concatenated file for each sample in the analyses directory. The concatenated file is then dereplicated.
 ```{r}
-# Alfa_concatenate_and_dereplicate_fasta.sh
+# bash Alfa_concatenate_and_dereplicate_fasta.sh
 ```
 Now the sequences have been assigned to samples, dereplicated, and are ready for further processing!

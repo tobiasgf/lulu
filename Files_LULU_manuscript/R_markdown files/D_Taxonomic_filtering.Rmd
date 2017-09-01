@@ -37,7 +37,6 @@ A number of files provided with this manuscript are necessary for the processing
 ```{r, eval=FALSE}
 library("taxize")
 setwd("~/analyses")
-setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
 main_path <- getwd() #"~/analyses" 
 path <- file.path(main_path, "otutables_processing")
 ```

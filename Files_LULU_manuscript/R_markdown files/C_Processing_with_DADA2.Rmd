@@ -38,14 +38,14 @@ A number of files provided with this manuscript are necessary for the processing
 ###Run the demultiplexing  
 The script identifies reads originating from different samples from combination of tag and primer sequence. Tag and primer is cut from the sequence during demultiplexing. The script will produce 130 paired files of R1 and R2 in each of two directories - one directory where the amplicons have the forward primer in the R1 file and the reverse primer in the R2 file file, and aother directory for the opposite case. Primers and tags are exciced from the reads during demultiplexing, also revere complementary remains of 3' primers, so we only have the pure amplicon region left. files are kept in the fastq format.  
 ```{r, eval=FALSE}
-# bash ~/data/Biowide/scripts/DADA2_demultiplex_tail_trim.sh
+# bash DADA2_demultiplex_tail_trim.sh
 ```
 Now the sequences have been assigned to samples and are ready for further processing!
 
 ###Merge the three replicates
 We are not interested in the informmation from separate PCRs in these analyses, and hence we pool all files belonging to the same sample. This script will put all the single replicates in a new directory, and make a new concatenated file for each sample in the analyses directory. 
 ```{r, eval=FALSE}
-# Alfa_concatenate_single_samples_fastq_DADA2.sh
+# bash Alfa_concatenate_single_samples_fastq_DADA2.sh
 ```
 Now we have a directory with "sense" reads and a directory with "anti-sense" reads. Both directories contain 130 pairs of R1/R2 fastq files.  
 
@@ -338,7 +338,7 @@ Add sha1 labels to the headers of the fasta sequences and save in new directory 
 Run the VSEARCH clustering on the extracted DADA2 reads  
 ```{r, eval=FALSE}
 # cd relabelled
-# Alfa_DADA2_vsearch.sh
+# bash Alfa_DADA2_vsearch.sh
 ```
 Now OTU tables and centroid files (as well as uclust files, uc) are present in  
 "~/analyses/DADA2_extracted_samples/relabelled/VSEARCH_PIPE/".   

@@ -24,7 +24,7 @@ A number of files provided with this manuscript are necessary for the processing
 Table_method_statistics_benchmarking.txt, Table_method_statistics_updated_revision1.txt, Table_manteltests.txt  
 
 ```{r,echo=FALSE, message=FALSE}
-setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
+setwd("~/analyses")
 main_path <- getwd() 
 path <- file.path(main_path, "otutables_processing")
 library(stringr)
@@ -37,7 +37,7 @@ library(cowplot)
 
 # collecting data for table 1
 ```{r,echo=FALSE}
-setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
+setwd("~/analyses")
 main_path <- getwd()
 path <- file.path(main_path, "otutables_processing")
 
@@ -82,7 +82,7 @@ tab_name <- file.path(main_path,"Table1_rev1.txt")
 
 #Collecting data for supplementary tables 3-4
 ```{r,echo=FALSE}
-setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
+setwd("~/analyses")
 main_path <- getwd()
 path <- file.path(main_path, "otutables_processing")
 allFiles <- list.files(path)

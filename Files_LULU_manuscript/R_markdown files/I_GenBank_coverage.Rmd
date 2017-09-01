@@ -31,7 +31,7 @@ All codes needed for this step are included below
 A species level species-site matrix of plant survey data (Table_plants_2014_cleaned.txt)  
 
 ```{r, eval=FALSE}
-setwd("~/Documents/BIOWIDE/BIOWIDE_MANUSCRIPTS/Alfa_diversity/analyses")
+setwd("~/analyses")
 main_path <- getwd()
 path <- file.path(main_path, "otutables_processing")
 library(rentrez)

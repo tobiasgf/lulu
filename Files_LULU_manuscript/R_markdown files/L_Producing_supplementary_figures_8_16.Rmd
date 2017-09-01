@@ -1,0 +1,250 @@
+---
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+```{r,echo=FALSE, message=FALSE}
+setwd("~/analyses")
+main_path <- getwd() 
+path <- file.path(main_path, "otutables_processing")
+library(stringr)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(ggpmisc)
+library(cowplot)
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+```
+
+```{r dpi=300,echo=FALSE}
+tab_name <- file.path(main_path,"Table_richness_calculations_long_bdotu3_benchmarking.txt")
+total_richness_df2 <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+total_richness_df2$Level <- 
+ factor(total_richness_df2$Level,levels = c("99/100", "98.5", "98", "97", 
+                                            "96", "95"))
+total_richness_df2$Method <- 
+ factor(total_richness_df2$Method,levels = c("VSEARCH", "SWARM", "DADA2(+VS)", 
+                                             "CROP"))
+
+total_richness_df2$Curated[total_richness_df2$Curated == "curated"] <- "LULU"
+
+total_richness_df2$Curated <- 
+ factor(total_richness_df2$Curated,levels = c("raw","xsingle","dbotu10","dbotu0","LULU"))
+
+formula <- y ~ x
+
+#Plot full x/y plots
+ggplot(total_richness_df2, aes(x= Obs, y= OTU, color = Curated)) +
+  geom_point(pch=21,size=1, alpha = 0.8) +
+  geom_abline(intercept = 0, linetype =2) +
+  facet_grid(Method ~Level) +
+  xlab("Plant richness") +
+  ylab("OTU richness") +
+  geom_smooth(method = "lm", se = F,size=0.5) +
+  #stat_poly_eq(geom = "label", 
+  #             alpha = 0.5,aes(label = paste(..eq.label.., 
+  #                                           ..rr.label.., sep = "~~~")), 
+  #             formula = formula, label.x.npc = "left", 
+  #             label.y.npc = "top", parse = TRUE, size = 1, label.size = NA) +
+  scale_fill_manual(values=cbPalette) + theme_bw() + 
+  theme(text = element_text(size=8)) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+**Figure 8. OTU richness vs. plant richness - LULU curation, singleton culling, curation with dbotu3.**  
+OTU richness (number of OTUs in each soil sample from the 130 sites) is plotted on the y-axis. Plant richness (number of plant species observed in each of the 130 40m x 40m sites) is plotted on the x-axis. Values are shown for un-curated OTU tables, tables with singletons removed (xsingle), tables curated with dbotu3, abundance criterion 10 (dbotu10), tables curated with dbotu3, abundance criterion 0 (dbotu0) and tables curated with LULU. The dashed line is an identity to evaluate whether the OTU count overestimates (to the left of the line) or underestimates (to the right) the plant richness. The “99/100%” clustering level denotes the pure DADA2 approach (100%) and SWARM with a d-value of 3 (99%). (a) shows the full y-axis, whereas (b) shows a truncated y-axis to better illustrate the correlations, by excluding the extreme values. Statistics of the regression can be seen in Supplementary Table 3. Although difficult to see from the plots, correspondence with plant data was best for the LULU curation.   
+
+\pagebreak
+
+ 
+```{r dpi=300,echo=FALSE}
+ggplot(total_richness_df2, aes(x= Obs, y= OTU, col = Curated)) +
+  geom_point(pch=21,size=1, alpha = 0.8) +
+  coord_cartesian(ylim = c(0, 200)) +
+  geom_abline(intercept = 0, linetype =2) +
+  facet_grid(Method ~Level) +
+  xlab("Plant richness") +
+  ylab("OTU richness") +
+  geom_smooth(method = "lm", se = F, size=0.5) +
+  #stat_poly_eq(geom = "label", 
+  #             alpha = 0.7,aes(label = paste(..eq.label.., 
+  #                                           ..rr.label.., sep = "~~~")), 
+  #             formula = formula, label.x.npc = "left", 
+  #             label.y.npc = 0.2, label.size = NA, parse = TRUE, size = 1) +
+  scale_fill_manual(values=cbPalette) + 
+  theme_bw() + 
+  theme(text = element_text(size=8)) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+**Figure 9. OTU richness vs. plant richness - LULU curation, singleton culling, curation with dbotu3.**  
+OTU richness (number of OTUs in each soil sample from the 130 sites) is plotted on the y-axis. Plant richness (number of plant species observed in each of the 130 40m x 40m sites) is plotted on the x-axis. Values are shown for un-curated OTU tables, tables with singletons removed (xsingle), tables curated with dbotu3, abundance criterion 10 (dbotu10), tables curated with dbotu3, abundance criterion 0 (dbotu0) and tables curated with LULU. The dashed line is an identity to evaluate whether the OTU count overestimates (to the left of the line) or underestimates (to the right) the plant richness. The “99/100%” clustering level denotes the pure DADA2 approach (100%) and SWARM with a d-value of 3 (99%). Statistics of the regression can be seen in Supplementary Table 3. Although difficult to see from the plots, correspondence with plant data was best for the LULU curation. Identical to Supplementary Figure 8, but with a truncated y-axis to better illustrate the correlations, by excluding the extreme values.  
+
+\pagebreak
+
+```{r dpi=300,echo=FALSE}
+tab_name <- file.path(main_path,"Table_method_statistics_benchmarking.txt")
+method_statistics <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+method_statistics$Level <- 
+ factor(method_statistics$Level,levels = c("99/100", "98.5", "98", "97", 
+                                           "96", "95"))
+method_statistics$Method <- 
+ factor(method_statistics$Method,levels = c("VSEARCH", "SWARM", "DADA2(+VS)", 
+                                            "CROP"))
+method_statistics$Curated[which(method_statistics$Curated == "curated")] <- "LULU"
+
+method_statistics$Curated <- 
+ factor(method_statistics$Curated,levels = c("raw","xsingle","dbotu10","dbotu0","LULU"))
+```
+
+
+ 
+```{r dpi=300,echo=FALSE}
+ggplot(method_statistics,aes(x=Curated,weights=OTU_count,fill=Curated)) +
+  geom_bar(position="dodge") + 
+  geom_hline(yintercept = 564,linetype = 2) +
+  facet_grid(Method ~Level) +
+  xlab("") +
+  ylab("OTUs") +
+  scale_fill_manual(values=cbPalette) +
+  theme_bw()+
+  theme(text = element_text(size=8)) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+**Figure 10. Total number of OTUs - LULU curation, singleton culling, curation with dbotu3.**  
+Total method level OTU richness is plotted on the y-axis. Values are shown for un-curated OTU tables, tables with singletons removed (xsingle), tables curated with dbotu3, abundance criterion 10 (dbotu10), tables curated with dbotu3, abundance criterion 0 (dbotu0) and tables curated with LULU. The dashed line indicates the total number of species (564) observed in the study for comparison. LULU consistently performed better on tables from the two greedy algorithms, but dbotu3 resulted in a comparable curation for the other approaches.  
+
+\pagebreak
+
+ 
+```{r dpi=300,echo=FALSE}
+ggplot(method_statistics,aes(x=Curated,weights=OTU_count,fill=Curated)) +
+  geom_bar(position="dodge") + 
+  geom_hline(yintercept = 564,linetype = 2) +
+  facet_grid(Method ~Level,scale = "free_y") +
+  xlab("") +
+  ylab("OTUs") +
+  scale_fill_manual(values=cbPalette) +
+  theme_bw()+
+  theme(text = element_text(size=8)) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+**Figure 11. Total number of OTUs - LULU curation, singleton culling, curation with dbotu3.**  
+Total method level OTU richness is plotted on the y-axis. Values are shown for un-curated OTU tables, tables with singletons removed (xsingle), tables curated with dbotu3, abundance criterion 10 (dbotu10), tables curated with dbotu3, abundance criterion 0 (dbotu0) and tables curated with LULU. The dashed line indicates the total number of species (564) observed in the study for comparison. The “99/100%” clustering level denotes the pure DADA2 approach (100%) and SWARM with a d-value of 3 (99%). LULU consistently performed better on tables from the two greedy algorithms, but dbotu3 resulted in a comparable curation for the other approaches. Identical to Supplementary Figure 10, but with a flexible y-axis for better comparison of the low richness CROP method.    
+
+\pagebreak
+
+  
+```{r dpi=300,echo=FALSE}
+ggplot(method_statistics,aes(x=Curated,weights=Redundancy,fill=Curated)) +
+  geom_bar(position="dodge") + 
+  facet_grid(Method ~Level) +
+  xlab("") +
+  ylab("Taxonomic redundancy (percentage of OTUs with redundant 
+       taxonomic annotation)") +
+  scale_fill_manual(values=cbPalette) +
+  theme_bw()+
+  scale_y_continuous(labels = scales::percent) + 
+  theme(text = element_text(size=8)) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+**Figure 12. Taxonomic redundancy - LULU curation, singleton culling, curation with dbotu3.**  
+Taxonomic redundancy (the proportion of OTUs with a redundant taxonomic assignment) is plotted on the y-axis. Values are shown for un-curated OTU tables, tables with singletons removed (xsingle), tables curated with dbotu3, abundance criterion 10 (dbotu10), tables curated with dbotu3, abundance criterion 0 (dbotu0) and tables curated with LULU. The “99/100%” clustering level denotes the pure DADA2 approach (100%) and SWARM with a d-value of 3 (99%). LULU performed best in all comparisons.   
+
+\pagebreak
+
+  
+```{r dpi=300,echo=FALSE}
+#Get beta diversity of plant survey
+tab_name <- file.path(main_path,"Table_plants_2014_cleaned.txt")
+Plant_data2014 <- read.table(tab_name, sep="\t", row.names = 1, 
+                             header=TRUE, as.is=TRUE)
+Plant_richness <- colSums(Plant_data2014)
+obs_beta <- nrow(Plant_data2014)/mean(Plant_richness)
+
+ggplot(method_statistics,aes(x=Curated,weights=Beta,fill=Curated)) +
+  geom_bar(position="dodge") + 
+  geom_hline(yintercept = obs_beta,linetype = 2) +
+  facet_grid(Method ~Level) +
+  xlab("") +
+  ylab("Betadiversity (total richness / avg. plot richness)") +
+  scale_fill_manual(values=cbPalette) +
+  theme_bw()+ theme(text = element_text(size=8)) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+**Figure 13. Betadiversity - LULU curation, singleton culling, curation with dbotu3.**  
+Betadiversity (calculated as total number of OTUs divided by the mean number of OTUs in the 130 sites) is plotted on the y-axis. Values are shown for un-curated OTU tables, tables with singletons removed (xsingle), tables curated with dbotu3, abundance criterion 10 (dbotu10), tables curated with dbotu3, abundance criterion 0 (dbotu0) and tables curated with LULU. The dashed line indicates the betadiversity of the plant data (17.23) observed in the study for comparison, calculated in the same way. The “99/100%” clustering level denotes the pure DADA2 approach (100%) and SWARM with a d-value of 3 (99%). All approaches result in more realistic betadiversity estimates, but LULU and dbotu3 (a=0) consistently performed best.   
+
+\pagebreak
+
+ 
+```{r dpi=300,echo=FALSE}
+tab_name <- file.path(main_path,"Table_OTU_match_rates_benchmarking.txt")
+pident_frame <- read.table(tab_name, sep="\t", header=TRUE, as.is=TRUE)
+
+pident_frame$level_pident <- 
+ factor(pident_frame$level_pident,levels = c("99/100", "98.5", "98", "97", 
+                                             "96", "95"))
+pident_frame$method_pident <- 
+ factor(pident_frame$method_pident,levels = c("VSEARCH", "SWARM", "DADA2(+VS)", 
+                                              "CROP"))
+
+pident_frame$pca[pident_frame$pca == "dbotu a10"] <- "dbotu10"
+pident_frame$pca[pident_frame$pca == "dbotu a0"] <- "dbotu0"
+
+pident_frame$pca <- 
+ factor(pident_frame$pca,levels = c("xsingle","dbotu10","dbotu0","LULU"))
+
+
+
+pident_frameR <- filter(pident_frame, retained_or_discarded == "retained")
+pident_frameD <- filter(pident_frame, retained_or_discarded == "discarded")
+
+#Violin plot of distribution of best matches, all methods
+ggplot(pident_frameR, aes(x=pca, 
+                         y=pident,fill=pca)) +
+  geom_violin() +
+  facet_grid(method_pident~level_pident)+
+  xlab("number of OTUs") +
+  ylab("Best match on GenBank") +
+  scale_fill_manual(values=cbPalette) +
+  theme_bw()+
+  theme(text = element_text(size=8)) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+**Figure 14. Distribution of best matches of retained OTUs - LULU curation, singleton culling, curation with dbotu3.**  
+Density distribution of the best reference database match for all retained OTUs (percent identity (%) of best matching reference sequence on GenBank) is plotted as a violin plot. Values are shown for OTU tables with singletons removed, tables processed with dbotu3 (a=10), and tables processed with dbotu3 (a=10) and tables curated with LULU. The “99/100%” clustering level denotes the pure DADA2 approach (100%) and SWARM with a d-value of 3 (99%). Although distributions are remarkably similar, some of the distribution show that LULU retains a higher proportion of perfect matches.  
+
+\pagebreak
+
+  
+```{r dpi=300,echo=FALSE}
+#Violin plot of distribution of best matches, all methods
+ggplot(pident_frameD, aes(x=pca, 
+                         y=pident,fill=pca)) +
+  geom_violin() +
+  facet_grid(method_pident~level_pident)+
+  xlab("number of OTUs") +
+  ylab("Best match on GenBank") +
+  scale_fill_manual(values=cbPalette) +
+  theme_bw()+
+  theme(text = element_text(size=8)) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+**Figure 15. Distribution of best matches of discarded OTUs - LULU curation, singleton culling, curation with dbotu3.**  
+Density distribution of the best reference database match for all discarded OTUs (percent identity (%) of best matching reference sequence on GenBank) is plotted as a violin plot. Values are shown for OTU tables with singletons removed, tables processed with dbotu3 (a=10), and tables processed with dbotu3 (a=10) and tables curated with LULU. The “99/100%” clustering level denotes the pure DADA2 approach (100%) and SWARM with a d-value of 3 (99%). Distributions are very similar, and no clear differences can be seen.  
+
+\pagebreak  
+  
+```{r dpi=300,echo=FALSE}
+#get dbotu3 one-step plot
+nameRDS <- file.path(main_path,"dbotu_onestep_plotRDS")
+dbotu3_onestep_plot <- readRDS(nameRDS)
+dbotu3_onestep_plot
+
+```
+**Figure 16. OTU richness vs. plant richness - dbotu3 as a 'one-step' clustering tool.**  
+OTU richness (number of OTUs in each soil sample from the 130 sites) is plotted on the y-axis. Plant richness (number of plant species observed in each of the 130 40m x 40m sites) is plotted on the x-axis. Values are shown for the two OTU tables produced with the dbotu3 algorithm as a one-step tool with two different abundance cutoff settings: abundance criterion 10 (intended for removing sequencing errors) and 0 (aimed at accounting for only sequencing error). The dashed line is an identity to evaluate whether the OTU count overestimates (to the left of the line) or underestimates (to the right) the plant richness. Statistics of the regression can be seen in the top.  
+
+
