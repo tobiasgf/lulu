@@ -7,9 +7,10 @@
 
 from __future__ import print_function
 
-__author__ = "Frédéric Mahé <frederic.mahe@cirad.fr>"
-__date__ = "2016/03/07"
-__version__ = "$Revision: 5.0"
+# modified from this script by Tobias Frøslev:
+#__author__ = "Frédéric Mahé <frederic.mahe@cirad.fr>"
+#__date__ = "2016/03/07"
+#__version__ = "$Revision: 5.0"
 
 import os
 import re
