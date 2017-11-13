@@ -77,7 +77,7 @@ OTU4  OTU9  0.86
 ...
 ```
 
-#### 3. Run the LULU curation in R
+#### 3. Run the **LULU** curation in **R**
 With the OTU table and the corresponding match list at hand, we can carry out the curation with **LULU** in **R**.
 ```
 > curated_result <- lulu(otutable_name, matchlist_name)
@@ -94,7 +94,7 @@ For more advanced uses, see the help-file for the function.
 
 ## Installation
 ___
-The lulu package can be installed in R (RStudio) using devtools, by typing these commands in R
+The lulu package can be installed in **R (RStudio)** using **devtools**, by typing these commands in **R**
 ```
 > library(devtools)
 > install_github("tobiasgf/lulu")  
@@ -134,13 +134,14 @@ cd test_data
 ```
 
 
-Download test data from LULU GitHub site (and OTU table and accompanying sequences/centroids)  
+Download test data from **LULU** GitHub site (and OTU table and accompanying sequences/centroids)  
+The OTU table contains 2425 OTUs destributed over 130 sites/samples.
 ```
 wget https://raw.githubusercontent.com/tobiasgf/lulu/master/Example_data/centroids_test.txt
 wget https://raw.githubusercontent.com/tobiasgf/lulu/master/Example_data/otutable_test.txt
 ```
 
-Make a match list (using blastN)  
+Make a match list (using **BlastN**)  
 Make blast database
 ```
 makeblastdb -in centroids_test.txt -parse_seqids -dbtype nucl
@@ -150,15 +151,99 @@ Blast the centoids against themselves
 blastn -db centroids_test.txt -outfmt '6 qseqid sseqid pident' -out match_list.txt -qcov_hsp_perc 80 -perc_identity 84 -query centroids_test.txt
 ```
 
-Run the curation with LULU (done in R).  
+Run the curation with **LULU** (done in **R**).  
 Read the files
 ```
 otutab <- read.csv("otutable_test.txt",sep='\t',header=TRUE,as.is=TRUE, row.names = 1)
 matchlist <- read.table("match_list.txt", header=FALSE,as.is=TRUE, stringsAsFactors=FALSE)
 ```
 
-Run LULU  
+Run **LULU**  
 ```
-curated_result <- lulu(otutab, matchlist)
+> curated_result <- lulu(otutab, matchlist)
 ```
 
+The curated OTU table can now be accessed here:
+```
+> curated_result$curated_table
+```
+and the original table here:
+```
+curated_result$original_table
+```
+
+...and other information on the data.  
+Number of OTUs retained:
+```
+> curated_result$curated_count
+[1] 459
+```
+IDs of OTUs retained (list only first)
+```
+> head(curated_result$curated_otus)
+[1] "001540ee723f903acddaf1c993cefde9c0c43d67" "0039237b99e15bfe7e12f4354d2dfd03b5ae22b0"
+[3] "014b752e527009320f56afb0df2caf0591d060ef" "014f57228502f64234316c86f180f555b3151464"
+[5] "016bb353b6b859d79a1ef36863cf0850806a3c06" "024f6daf85d8aed1f23c119c31a8acfba5b82a66"
+```
+(...I use sha1 hash names for my OTUs... hence the strange IDs...)
+
+number of OTUs discarded  
+```
+> curated_result$discarded_count
+[1] 1966
+```
+
+IDs of OTUs discarded (list only first)
+```
+> head(curated_result$discarded_otus)
+[1] "7c535c7709639b9ec025858cca671d406966a653" "1ea168de62e8686635707db62629aae301a14b2b"
+[3] "0c2c529cbd545bc3675f3433b0160e0cb56c4b2c" "ee7271685168ed084bfcaa5515caf4761012f260"
+[5] "2e721d0157683b7e1ab7999fc5c9d22b0a3b4397" "57f40e612102dc39214b2670caca5d8c3f5b7897"
+```
+
+Check the computation time
+```
+> curated_result$runtime
+Time difference of 1.053344 mins
+```
+
+Check which setting was used for minimum_match
+```
+> curated_result$minimum_match
+[1] 84
+```
+Check which setting was used for minimum_match
+```
+> curated_result$minimum_relative_cooccurence
+[1] 0.95
+```
+Check how the OTUs were mapped.  
+This file includes som basec stats:  
+Total: total read count  
+Spread: the number of samples the OTU is present in  
+Parent_id: ID of OTU with which this OTU was merged (or self)  
+Curated: (parent/merged), was this OTU kept as a valid OTU (parent) or merged with another  
+Rank: The rank of the OTU in terms of decreasing spread and read count    
+```
+> head(curated_result$otu_map)
+                                          total spread                                parent_id curated rank
+ec84eb6504ec23a3fe659c533bf9b3f08f5bd1cb 136715     58 ec84eb6504ec23a3fe659c533bf9b3f08f5bd1cb  parent    6
+79a49b866cf4bdc00d11eb1c7b91957ce15a0314 104908     50 79a49b866cf4bdc00d11eb1c7b91957ce15a0314  parent   11
+c2f02be9235142d605aaa5170f38d5a9c8a684de  98839     45 c2f02be9235142d605aaa5170f38d5a9c8a684de  parent   13
+9b88a08f039c7bfc513e52b4369b4f05857cb1f5 171279     42 9b88a08f039c7bfc513e52b4369b4f05857cb1f5  parent    5
+a2e5ad0bd2a99776da541051125b0ad377f7ea6e 634469     41 a2e5ad0bd2a99776da541051125b0ad377f7ea6e  parent    1
+aafb7fcf4cfed42eaae4141f2af712b5ca7db7f0 301433     36 aafb7fcf4cfed42eaae4141f2af712b5ca7db7f0  parent    3
+
+# And checking somewat further down the table
+> curated_result$otu_map[300:308,]
+                                         total spread                                parent_id curated rank
+709d050ce8c823a6650c74f085ff034093e3ad42   108      5 ec84eb6504ec23a3fe659c533bf9b3f08f5bd1cb  merged  483
+1dbf509b1f6bd8470354e29855459b1c0bf4d033    94      5 0b2e099f3eebf3ef942767f4c190c4ec703bbe30  merged  518
+01b7e27549e043e22aebe8c215746fdbbd37a4e4    88      5 ec84eb6504ec23a3fe659c533bf9b3f08f5bd1cb  merged  537
+3eda946fc9435377e003bf85089f75ddf7972a7d    87      5 a2e5ad0bd2a99776da541051125b0ad377f7ea6e  merged  539
+c623dbeece5ff9df34c56decee695be51d30b5e1    86      5 ec84eb6504ec23a3fe659c533bf9b3f08f5bd1cb  merged  547
+212eae5cd8133d47b085ea861a0f6865928a9276    85      5 aafb7fcf4cfed42eaae4141f2af712b5ca7db7f0  merged  550
+22740909902c879d2b044a0ac8ac4bbdee2a9bdf    79      5 bd34bf9b277639657f65381c53d7715718a184c7  merged  563
+3f17a0b4a4097f5348fa817a1ada92ec3ae7d37e    67      5 aafb7fcf4cfed42eaae4141f2af712b5ca7db7f0  merged  611
+9612a49d162af29198945e1b09ddf0616da0288f    65      5 aafb7fcf4cfed42eaae4141f2af712b5ca7db7f0  merged  619
+```
