@@ -54,7 +54,7 @@ GCGATGCGAT...
 #### 2. Produce a match list  
 The match list can in practice be produced with any tool for pair wise matching of sequences. **BLASTn** is an effective tool for this, and the one that was used in the validation of the **LULU** algorithm. The only requirements is that the match list has three columns with pair wise similarity scores for the OTUs. The first column contains the id of the query OTU, the second column contains the id of the matching OTU, and the third column contains the similarity score (%) of the two OTUs.  
 
-BlastN - a match list can be produced with **blastN** with these commands:  
+BLASTn - a match list can be produced with **BLASTn** with these commands:  
 ```
 #First produce a blastdatabase with the OTUs
 makeblastdb -in OTU_sequences.fasta -parse_seqids -dbtype nucl
@@ -62,7 +62,7 @@ makeblastdb -in OTU_sequences.fasta -parse_seqids -dbtype nucl
 blastn -db OTU_sequences.fasta -outfmt '6 qseqid sseqid pident' -out match_list.txt -qcov_hsp_perc 80 -perc_identity 84 -query OTU_sequences.fasta
 ```
 
-Alternatively, a matchlist can also be produced with **VSEARCH** with this command
+**VSEARCH** - Alternatively, a matchlist can also be produced with **VSEARCH** with this command
 ```
 vsearch --usearch_global OTU_sequences.fasta --db OTU_sequences.fasta --self --id .84 --iddef 1 --userout match_list.txt -userfields query+target+id --maxaccepts 0 --query_cov .9 --maxhits 10
 ```
@@ -86,7 +86,7 @@ The `lulu` function will return a curated OTU table and some statistics and info
 ```
 curated_result$curated_table
 ```
-This table can the be used for further biodiversity analyses, etc.  
+This table can then be used for further biodiversity analyses, etc.  
 For more advanced uses, see the help-file for the function.  
 ```
 >?lulu  
@@ -111,9 +111,9 @@ This is the processing flow employed by the r-function:
 4. Select OTUs from the 'hits' that have an occurrence at the level of the 'potential daughter' or higher, and designate these as 'potential parents'.  
 5. Test all potential parents (one by one, from top to bottom) to see if the distribution of the 'potential daughter' among samples can be explained by co-occurence (satisfying the co-occurence threshold, and the abundance threshold) by the 'potential parent', and if so, flag the 'potential daughter as an error of that 'parent'.  
   - In this step all samples (columns of the OTU table) where the 'potential daughter' occurs are selected also for the 'potential parent'.  
-  - If the number of samples where the 'potential parent' has a positive presence is below the minimum_relative_cooccurence (default 95%, meaning that 1 in 20 samples are allowed to have no parent presence), the 'potential parent' is rejected.  
-  - If not, the abundance ratio between 'potential daughter' and 'potential parent' is calculated for all samples, and tested against the minimum_ratio.  
-  - The minimum ratio  can be set to any number, and the threshold (minimum_ratio_type) can be set to be evaluated as the minimum (min) observed ratio or the average (avg) observed ratio.  
+  - If the number of samples where the 'potential parent' has a positive presence is below the `minimum_relative_cooccurence (default 95%, meaning that 1 in 20 samples are allowed to have no parent presence), the 'potential parent' is rejected.  
+  - If not, the abundance ratio between 'potential daughter' and 'potential parent' is calculated for all samples, and tested against the `minimum_ratio`.  
+  - The minimum ratio  can be set to any number, and the threshold (`minimum_ratio_type`) can be set to be evaluated as the minimum (`min`) observed ratio or the average (`avg`) observed ratio.  
   - If the potential parent satisfies the ratio threshold, the 'potential daughter' is flagged as an error of this OTU.  
 6. If no potential parent satisfies the criteria above, the 'potential daughter' is flagged as a valid OTU.  
 7. repeat from 2 with the next OTU until the full table has bee processed.  
@@ -125,7 +125,7 @@ This is the processing flow employed by the r-function:
  
 ## Tutorial
 ___
-A step-by-step walk-through with the 97% clustered (VSEARCH) data from the LULU paper.  
+A step-by-step walk-through with the 97% clustered (**VSEARCH**) data from the **LULU** paper.  
 The first steps are carried out in Linux/Unix.  
 Make a directory for the analyses:    
 ```
@@ -134,14 +134,14 @@ cd test_data
 ```
 
 
-Download test data from **LULU** GitHub site (and OTU table and accompanying sequences/centroids)  
+Download test data from this **LULU** GitHub site (and OTU table and accompanying sequences/centroids)  
 The OTU table contains 2425 OTUs destributed over 130 sites/samples.
 ```
 wget https://raw.githubusercontent.com/tobiasgf/lulu/master/Example_data/centroids_test.txt
 wget https://raw.githubusercontent.com/tobiasgf/lulu/master/Example_data/otutable_test.txt
 ```
 
-Make a match list (using **BlastN**)  
+Make a match list (using **BLASTn**)  
 Make blast database
 ```
 makeblastdb -in centroids_test.txt -parse_seqids -dbtype nucl
@@ -211,23 +211,23 @@ Check the computation time
 Time difference of 1.053344 mins
 ```
 
-Check which setting was used for minimum_match
+Check which setting was used for `minimum_match`
 ```
 > curated_result$minimum_match
 [1] 84
 ```
-Check which setting was used for minimum_match
+Check which setting was used for `minimum_match`
 ```
 > curated_result$minimum_relative_cooccurence
 [1] 0.95
 ```
 Check how the OTUs were mapped.  
 This file includes som basec stats:  
-Total: total read count  
-Spread: the number of samples the OTU is present in  
-Parent_id: ID of OTU with which this OTU was merged (or self)  
-Curated: (parent/merged), was this OTU kept as a valid OTU (parent) or merged with another  
-Rank: The rank of the OTU in terms of decreasing spread and read count    
+*total* - total read count  
+*spread* - the number of samples the OTU is present in  
+*parent_id* - ID of OTU with which this OTU was merged (or self)  
+*curated* - ("parent" or "merged"), was this OTU kept as a valid OTU (parent) or merged with another  
+*rank* - The rank of the OTU in terms of decreasing spread and read count    
 ```
 > head(curated_result$otu_map)
                                           total spread                                parent_id curated rank
@@ -252,8 +252,14 @@ c623dbeece5ff9df34c56decee695be51d30b5e1    86      5 ec84eb6504ec23a3fe659c533b
 9612a49d162af29198945e1b09ddf0616da0288f    65      5 aafb7fcf4cfed42eaae4141f2af712b5ca7db7f0  merged  619
 ```
 
-The function also produces a log file which will be placed in the working directory.  
-For each OTU processed, the log file contains: 1) a list of all hits (other OTUs with a sequence similarity above the selected threshold) in the dataset is listed, 2) all potential parents (hits with a lower rank number, i.e. higher spread and total read count, and satisfying the selected ratio of read counts), 3) relative co-occurence of all parents (or until a parent satisfying the minimum relative cooccurence threshold is met), and 4) information whether the OTU was found to have a parent or not. The example below shows parts of the output for an OTU (b168b5b94056f0eef180562cbf6b24bdef011758) that did not have a parent (i.e. was retained as a valid OTU), and another OTU (1ea168de62e8686635707db62629aae301a14b2b) that was found to be an error of another OTU (79a49b866cf4bdc00d11eb1c7b91957ce15a0314).
+The `lulu` function also produces a log file (named something like lulu.log_20171113_162157) which will be placed in the working directory.  
+For each OTU processed, the log file contains:  
+1) a list of all *hits*, i.e. other OTUs with a sequence similarity above the selected threshold) in the dataset is listed, and   
+2) all *potential parents*, i.e. hits with a lower rank number, i.e. higher spread and total read count, and satisfying the selected ratio of read counts, and   
+3) *relative co-occurence* of all parents (until a parent satisfying the minimum relative cooccurence threshold is met, if one such is present), and   
+4) information whether the OTU was found to have a parent or not ("No parent found!" or "SETTING XXX to be an ERROR of YYY")   
+
+The example below shows parts of the output for an OTU (b168b5b94056f0eef180562cbf6b24bdef011758) that did not have a parent (i.e. was retained as a valid OTU), and another OTU (1ea168de62e8686635707db62629aae301a14b2b) that was found to be an error of another OTU (79a49b866cf4bdc00d11eb1c7b91957ce15a0314).
 
 ```
 ####processing: b168b5b94056f0eef180562cbf6b24bdef011758 #####
