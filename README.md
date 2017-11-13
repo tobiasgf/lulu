@@ -256,8 +256,9 @@ The `lulu` function also produces a log file (named something like lulu.log_2017
 For each OTU processed, the log file contains:  
 1) a list of all *hits*, i.e. other OTUs with a sequence similarity above the selected threshold) in the dataset is listed, and   
 2) all *potential parents*, i.e. hits with a lower rank number, i.e. higher spread and total read count, and satisfying the selected ratio of read counts, and   
-3) *relative co-occurence* of all parents (until a parent satisfying the minimum relative cooccurence threshold is met, if one such is present), and   
-4) information whether the OTU was found to have a parent or not ("No parent found!" or "SETTING XXX to be an ERROR of YYY")   
+3) *relative co-occurence* of all parents (until a parent satisfying the minimum relative cooccurence (and min avg abundance) thresholds is met, if one such is present), and
+4) *min avg abundance* of parents satisfying minimum relative co-occurence, and
+5) information whether the OTU was found to have a parent or not ("No parent found!" or "SETTING XXX to be an ERROR of YYY")   
 
 The example below shows parts of the output for an OTU (b168b5b94056f0eef180562cbf6b24bdef011758) that did not have a parent (i.e. was retained as a valid OTU), and another OTU (1ea168de62e8686635707db62629aae301a14b2b) that was found to be an error of another OTU (79a49b866cf4bdc00d11eb1c7b91957ce15a0314).
 
