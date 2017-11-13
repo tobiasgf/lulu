@@ -111,7 +111,7 @@ This is the processing flow employed by the r-function:
 4. Select OTUs from the 'hits' that have an occurrence at the level of the 'potential daughter' or higher, and designate these as 'potential parents'.  
 5. Test all potential parents (one by one, from top to bottom) to see if the distribution of the 'potential daughter' among samples can be explained by co-occurence (satisfying the co-occurence threshold, and the abundance threshold) by the 'potential parent', and if so, flag the 'potential daughter as an error of that 'parent'.  
   - In this step all samples (columns of the OTU table) where the 'potential daughter' occurs are selected also for the 'potential parent'.  
-  - If the number of samples where the 'potential parent' has a positive presence is below the `minimum_relative_cooccurence (default 95%, meaning that 1 in 20 samples are allowed to have no parent presence), the 'potential parent' is rejected.  
+  - If the number of samples where the 'potential parent' has a positive presence is below the `minimum_relative_cooccurence` (default 95%, meaning that 1 in 20 samples are allowed to have no parent presence), the 'potential parent' is rejected.  
   - If not, the abundance ratio between 'potential daughter' and 'potential parent' is calculated for all samples, and tested against the `minimum_ratio`.  
   - The minimum ratio  can be set to any number, and the threshold (`minimum_ratio_type`) can be set to be evaluated as the minimum (`min`) observed ratio or the average (`avg`) observed ratio.  
   - If the potential parent satisfies the ratio threshold, the 'potential daughter' is flagged as an error of this OTU.  
@@ -222,7 +222,7 @@ Check which setting was used for `minimum_match`
 [1] 0.95
 ```
 Check how the OTUs were mapped.  
-This file includes som basec stats:  
+This file includes som basic stats:  
 *total* - total read count  
 *spread* - the number of samples the OTU is present in  
 *parent_id* - ID of OTU with which this OTU was merged (or self)  
