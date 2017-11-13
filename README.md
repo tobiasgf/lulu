@@ -116,3 +116,42 @@ This is the processing flow employed by the r-function:
   - By processing the OTU table from the bottom, OTUs can be merged in series, with parents of errors, subsequently being merged with more abundant OTUs.  
   - This allows errors of errors to be merged with their ultimate parents, also it allows for imperfectly assigned 'daughters' in a swarm of errors or biological variants within an abundant and/or genetically variable species to be merged correctly.  
  
+ 
+## Tutorial
+___
+A step-by-step walk-through with the 97% clustered (VSEARCH) data from the LULU paper.  
+The first steps are carried out in Linux/Unix.  
+Make a directory for the analyses:    
+```
+mkdir test_data
+cd test_data
+```
+
+
+Download test data from LULU GitHub site (and OTU table and accompanying sequences/centroids)  
+```
+wget https://raw.githubusercontent.com/tobiasgf/lulu/master/Example_data/centroids_test.txt
+wget https://raw.githubusercontent.com/tobiasgf/lulu/master/Example_data/otutable_test.txt
+```
+
+Make a match list (using blastN)  
+Make blast database
+```
+makeblastdb -in centroids_test.txt -parse_seqids -dbtype nucl
+```
+Blast the centoids against themselves
+```
+blastn -db centroids_test.txt -outfmt '6 qseqid sseqid pident' -out match_list.txt -qcov_hsp_perc 80 -perc_identity 84 -query centroids_test.txt
+```
+
+Run the curation with LULU (done in R).  
+Read the files
+```
+otutab <- read.csv("otutable_test.txt",sep='\t',header=TRUE,as.is=TRUE, as.is=TRUE, row.names = 1)
+matchlist <- read.table("match_list.txt", header=FALSE,as.is=TRUE, stringsAsFactors=FALSE)
+```
+Run LULU
+``
+curated_result <- lulu(otutab, matchlist)
+```
+
