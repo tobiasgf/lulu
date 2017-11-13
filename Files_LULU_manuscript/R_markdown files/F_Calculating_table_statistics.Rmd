@@ -457,16 +457,3 @@ tab_name <- file.path(main_path,"Table_taxonomic_dissimilatiry_wide.txt")
 {write.table(community_distance_table, tab_name, sep="\t",quote=FALSE, 
              col.names = NA)}
 ```
-
-
-```{r, eval=FALSE}
-
-sort(pa_vs_plant_statistic[21:40] - pa_vs_plant_statistic[1:20])
-sort(ab_vs_plant_statistic[21:40] - ab_vs_plant_statistic[1:20])
-
-aa <- c(11.1111,22,33)
-bb <- c(0,1,2)
-
-paste0(as.character(round(aa, digits=1)), " / ", as.character(bb))
-
-```
