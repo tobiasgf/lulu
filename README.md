@@ -161,13 +161,17 @@ matchlist <- read.table("match_list.txt", header=FALSE,as.is=TRUE, stringsAsFact
 Run **LULU**  
 ```
 > curated_result <- lulu(otutab, matchlist)
+
+# ....Which is equivalent of running LULU with default settings for the options minimum_ratio_type, minimum_ratio, minimum_relative_cooccurence  
+
+> curated_result <- lulu(otutab, matchlist, minimum_ratio_type = "min", minimum_ratio = 1, minimum_match = 84, minimum_relative_cooccurence = 0.95)
 ```
 
 The curated OTU table can now be accessed here:
 ```
 > curated_result$curated_table
 ```
-and the original table here:
+...and the original table here:
 ```
 curated_result$original_table
 ```
@@ -246,4 +250,60 @@ c623dbeece5ff9df34c56decee695be51d30b5e1    86      5 ec84eb6504ec23a3fe659c533b
 22740909902c879d2b044a0ac8ac4bbdee2a9bdf    79      5 bd34bf9b277639657f65381c53d7715718a184c7  merged  563
 3f17a0b4a4097f5348fa817a1ada92ec3ae7d37e    67      5 aafb7fcf4cfed42eaae4141f2af712b5ca7db7f0  merged  611
 9612a49d162af29198945e1b09ddf0616da0288f    65      5 aafb7fcf4cfed42eaae4141f2af712b5ca7db7f0  merged  619
+```
+
+The function also produces a log file which will be placed in the working directory.  
+For each OTU processed, the log file contains: 1) a list of all hits (other OTUs with a sequence similarity above the selected threshold) in the dataset is listed, 2) all potential parents (hits with a lower rank number, i.e. higher spread and total read count, and satisfying the selected ratio of read counts), 3) relative co-occurence of all parents (or until a parent satisfying the minimum relative cooccurence threshold is met), and 4) information whether the OTU was found to have a parent or not. The example below shows parts of the output for an OTU (b168b5b94056f0eef180562cbf6b24bdef011758) that did not have a parent (i.e. was retained as a valid OTU), and another OTU (1ea168de62e8686635707db62629aae301a14b2b) that was found to be an error of another OTU (79a49b866cf4bdc00d11eb1c7b91957ce15a0314).
+
+```
+####processing: b168b5b94056f0eef180562cbf6b24bdef011758 #####
+<< ... NB: many hits left out ... >>
+---hits: 87e8911113447fea3f9cdb75ff86ff3ab89f5add 
+---hits: e6accfc1b24e27860d90ef26f2336c24b5dafb75 
+---hits: 67b28704e8b6c6489bc43583a4aff4919b7013b3 
+---hits: 54c8d513876fa4aa520b9b439d0c2253de80c479 
+---hits: a4d4d755b2f698b95d028dccaff3bc58a9488c4f 
+---hits: eaaabfb22a7d3beb15ddeb189c00c925a74f4ad9 
+---hits: 1fe335b946757d5c28cb3a863cb55dd89db25465
+---potential parent: ec84eb6504ec23a3fe659c533bf9b3f08f5bd1cb 
+---potential parent: 79a49b866cf4bdc00d11eb1c7b91957ce15a0314 
+---potential parent: c2f02be9235142d605aaa5170f38d5a9c8a684de 
+---potential parent: 0d87b85358966ea5287480c1e236b06814bd1060 
+---potential parent: a666e5d1e6860d8fd9eddb5018020c15124e97a1 
+---potential parent: 1ea168de62e8686635707db62629aae301a14b2b
+------checking: ec84eb6504ec23a3fe659c533bf9b3f08f5bd1cb
+------relative cooccurence: 0.68
+------checking: 79a49b866cf4bdc00d11eb1c7b91957ce15a0314
+------relative cooccurence: 0.64
+------checking: c2f02be9235142d605aaa5170f38d5a9c8a684de
+------relative cooccurence: 0.64
+------checking: 0d87b85358966ea5287480c1e236b06814bd1060
+------relative cooccurence: 0.08
+------checking: a666e5d1e6860d8fd9eddb5018020c15124e97a1
+------relative cooccurence: 0.52
+------checking: 1ea168de62e8686635707db62629aae301a14b2b
+------relative cooccurence: 0.36
+No parent found!
+
+
+####processing: 1ea168de62e8686635707db62629aae301a14b2b #####
+<< ... NB: many hits left out ... >>
+---hits: 21bebcd27a1acb22fe170631aa3d6443a8ab34ba 
+---hits: a7d10f70afd816b32dd68b9ae38192b9b73a6404 
+---hits: 7801ac4bf8cc9611cb93899aebd0ec6b97c90601 
+---hits: f8e6e2ccf691d010b2ddbd6eb29a57334cd029d7 
+---hits: 4c609758a47745d53e0783534a2a9bec66771c8b 
+---hits: aedf2739938830e87ace58dcaedeaaf5567328d0
+---potential parent: ec84eb6504ec23a3fe659c533bf9b3f08f5bd1cb 
+---potential parent: 79a49b866cf4bdc00d11eb1c7b91957ce15a0314 
+---potential parent: c2f02be9235142d605aaa5170f38d5a9c8a684de 
+---potential parent: 0d87b85358966ea5287480c1e236b06814bd1060 
+---potential parent: a666e5d1e6860d8fd9eddb5018020c15124e97a1 
+---potential parent: b168b5b94056f0eef180562cbf6b24bdef011758
+------checking: ec84eb6504ec23a3fe659c533bf9b3f08f5bd1cb
+------relative cooccurence: 0.92
+------checking: 79a49b866cf4bdc00d11eb1c7b91957ce15a0314
+------relative cooccurence: 1 which is sufficient!
+------min avg abundance: 27.8888888888889 which is OK!
+SETTING 1ea168de62e8686635707db62629aae301a14b2b to be an ERROR of 79a49b866cf4bdc00d11eb1c7b91957ce15a0314
 ```
