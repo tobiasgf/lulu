@@ -94,8 +94,9 @@ batchfileDADA2.list  - file with library information for demultiplexing the R1/R
 * DADA2_tags_R3A.list
 * DADA2_tags_R3B.list
 
-Table_plants_2014_cleaned.txt - Species/site matrix for the plant survey data.
-Raw MiSeq data (not included in supplementary material). (accessible from http://datadryad.org/ accession no XXX).
+Table_plants_2014_cleaned.txt - Species/site matrix for the plant survey data.  
+
+Raw MiSeq data (not included in supplementary material). (accessible here http://datadryad.org/resource/doi:10.5061/dryad.n9077).
 
 * ESW-QPKH-ITS4-ITS2-R1A_S1_L001_R1_001.fastq.gz
 * ESW-QPKH-ITS4-ITS2-R1A_S1_L001_R2_001.fastq.gz
