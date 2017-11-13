@@ -216,7 +216,7 @@ Check which setting was used for `minimum_match`
 > curated_result$minimum_match
 [1] 84
 ```
-Check which setting was used for `minimum_match`
+Check which setting was used for `minimum_relative_cooccurence`
 ```
 > curated_result$minimum_relative_cooccurence
 [1] 0.95
