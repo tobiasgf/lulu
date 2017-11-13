@@ -153,7 +153,7 @@ blastn -db centroids_test.txt -outfmt '6 qseqid sseqid pident' -out match_list.t
 Run the curation with LULU (done in R).  
 Read the files
 ```
-otutab <- read.csv("otutable_test.txt",sep='\t',header=TRUE,as.is=TRUE, as.is=TRUE, row.names = 1)
+otutab <- read.csv("otutable_test.txt",sep='\t',header=TRUE,as.is=TRUE, row.names = 1)
 matchlist <- read.table("match_list.txt", header=FALSE,as.is=TRUE, stringsAsFactors=FALSE)
 ```
 
