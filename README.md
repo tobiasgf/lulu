@@ -4,7 +4,7 @@ A r-package for distribution based post clustering curation of amplicon data.
 
 The purpose of **LULU** is to reduce the number of erroneous OTUs in OTU tables to achieve more realistic biodiversity metrics. By evaluating the co-occurence patterns of OTUs among samples **LULU** identifies OTUs that consistently satisfy some user selected criteria for being errors of more abundant OTUs and merges these. It has been shown that curation with **LULU** consistently result in more realistic diversity metrics. The required input of **LULU** is an OTU table and a corresponding matchlist with all the internal matches of OTUs.  
 
-The method is published here:
+The method is published here:  
 Frøslev, T. G., Kjøller, R., Bruun, H. H., Ejrnæs, R., Brunbjerg, A. K., Pietroni, C., & Hansen, A. J. (2017). Algorithm for post-clustering curation of DNA amplicon data yields reliable biodiversity estimates. Nature Communications, 8(1), 1188.  
 
 https://www.nature.com/articles/s41467-017-01312-x
@@ -156,8 +156,9 @@ Read the files
 otutab <- read.csv("otutable_test.txt",sep='\t',header=TRUE,as.is=TRUE, as.is=TRUE, row.names = 1)
 matchlist <- read.table("match_list.txt", header=FALSE,as.is=TRUE, stringsAsFactors=FALSE)
 ```
+
 Run LULU  
-``
+```
 curated_result <- lulu(otutab, matchlist)
 ```
 
