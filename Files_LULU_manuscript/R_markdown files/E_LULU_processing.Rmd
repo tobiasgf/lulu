@@ -92,7 +92,7 @@ for(i in seq(1:length(read_tabs))) {
   tab[[i]] <- tab[[i]][which(rowSums(tab[[i]]) > 0),samples]
   ml[[i]] <- read.csv(read_mls[i],sep='\t',header=F,as.is=TRUE)
   proc_min <- lulu(tab[[i]],ml[[i]]) ## RUNNING LULU for each table
-  curated_table <- proc_min$curated_OTU_table ## extracting the curated table
+  curated_table <- proc_min$curated_table ## extracting the curated table (line updated 17/01/2017)
   saveRDS(proc_min,proc_files[i])
   {write.table(curated_table, proc_tabs[i], sep="\t",quote=FALSE, 
                col.names = NA)}
