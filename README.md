@@ -67,13 +67,13 @@ blastn -db OTU_sequences.fasta -outfmt '6 qseqid sseqid pident' -out match_list.
 vsearch --usearch_global OTU_sequences.fasta --db OTU_sequences.fasta --self --id .84 --iddef 1 --userout match_list.txt -userfields query+target+id --maxaccepts 0 --query_cov .9 --maxhits 10
 ```
 
-No matter which algorithm is used for internal OTU matching, the resulting match list, should look like this:
+No matter which algorithm is used for internal OTU matching, the resulting match list, should look like this (with match in percent, with or without decimals):
 ```
-OTU1  OTU2  0.90
-OTU1  OTU3  0.88
-OTU3  OTU3  1
-OTU3  OTU4  0.82
-OTU4  OTU9  0.86
+OTU1  OTU2  90.000
+OTU1  OTU3  88.000
+OTU3  OTU3  100.000
+OTU3  OTU4  82.123
+OTU4  OTU9  86.333
 ...
 ```
 
