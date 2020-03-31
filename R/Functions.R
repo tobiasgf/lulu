@@ -27,7 +27,7 @@
 #'   set to \code{min} (default), the \code{minimum_ratio} applies to the lowest observed
 #'   ration across the samples.  If the \code{minimum_ratio_type} is
 #'   set to \code{avg} (default), the \code{minimum_ratio} applies to the mean of observed
-#'   ration across the samples.\code{avg}. (default is 1).
+#'   ratios across the samples.\code{avg}. (default is 1).
 #' @param minimum_match minimum threshold of sequence similarity
 #'   for considering any OTU as an error of another can be set (default 84\%).
 #' @param minimum_relative_cooccurence minimum co-occurrence rate – i.e. the
