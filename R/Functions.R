@@ -22,7 +22,7 @@
 #'   possible to account for non-sufficiently clustered intraspecific variation,
 #'   but is not generally recommended, as it will also increase the potential of
 #'   cluster well-separated, but co-occuring, sequence similar species.
-#' @param minimum_ratio sets the minimim abundance ratio between a potential error
+#' @param minimum_ratio sets the minimum abundance ratio between a potential error
 #'   and a potential parent to be identified as an error. If the \code{minimum_ratio_type} is
 #'   set to \code{min} (default), the \code{minimum_ratio} applies to the lowest observed
 #'   ration across the samples.  If the \code{minimum_ratio_type} is
