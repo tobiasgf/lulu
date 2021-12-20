@@ -10,7 +10,7 @@ CUR_PATH=$(pwd)
 # Define binaries, temporary files and output files
 CUTADAPT="$(which cutadapt) --discard-untrimmed --minimum-length ${MIN_LENGTH} -e 0"
 CUTADAPT2="$(which cutadapt) -e 0"
-VSEARCH=$(which vsearch)
+
 C1_FASTQ=$(mktemp)
 C2_FASTQ=$(mktemp)
 TMP_FASTQ=$(mktemp)
