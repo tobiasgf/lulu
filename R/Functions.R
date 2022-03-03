@@ -33,6 +33,7 @@
 #' @param minimum_relative_cooccurence minimum co-occurrence rate – i.e. the
 #'   lower rate of occurrence of the potential error explained by co-occurrence
 #'   with the potential parent for considering error state.
+#' @param progress_bar (logical) print progress during the calculation or not.
 #' @return Function \code{lulu} returns a list of results based on the input OTU
 #'   table and match list.
 #'   \enumerate{
@@ -60,7 +61,7 @@
 #'   Producing the match list requires a file with all the OTU sequences (centroids) - e.g. \code{OTUcentroids.fasta}. The matchlist can be produced by mapping all OTUs against each other with an external algorithm like VSEARCH or BLASTN. In \code{VSEARCH} a matchlist can be produced e.g. with the following command: \code{vsearch --usearch_global OTUcentroids.fasta --db OTUcentroids.fasta --strand plus --self --id .80 --iddef 1 --userout matchlist.txt --userfields query+target+id --maxaccepts 0 --query_cov .9 --maxhits 10}. In \code{BLASTN} a matchlist can be produces e.g. with the following commands. First we produce a blast-database from the fasta file: \code{makeblastdb -in OTUcentroids.fasta -parse_seqids -dbtype nucl}, then we match the centroids against that database: \code{blastn -db OTUcentoids.fasta -num_threads 10 -outfmt'6 qseqid sseqid pident' -out matchlist.txt -qcov_hsp_perc .90 -perc_identity .84 -query OTUcentroids.fasta}
 #' @author Tobias Guldberg Frøslev
 #' @export
-lulu <- function(otutable, matchlist, minimum_ratio_type = "min", minimum_ratio = 1, minimum_match = 84, minimum_relative_cooccurence = 0.95) {
+lulu <- function(otutable, matchlist, minimum_ratio_type = "min", minimum_ratio = 1, minimum_match = 84, minimum_relative_cooccurence = 0.95, progress_bar = TRUE) {
   require(dplyr)
   start.time <- Sys.time()
   colnames(matchlist) <- c("OTUid", "hit", "match")
@@ -92,7 +93,9 @@ lulu <- function(otutable, matchlist, minimum_ratio_type = "min", minimum_ratio 
                      width = 50,   # Progress bar width. Defaults to getOption("width")
                      char = "=")   # Character used to create the bar
   for (line in seq(1:nrow(statistics_table))) {
-    setTxtProgressBar(pb, line)
+    if(progress_bar) {
+      setTxtProgressBar(pb, line)
+    }
     potential_parent_id <- row.names(otutable)[line]
     cat(paste0("\n", "####processing: ", potential_parent_id, " #####"),
         file = log_con)
