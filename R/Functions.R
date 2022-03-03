@@ -85,10 +85,14 @@ lulu <- function(otutable, matchlist, minimum_ratio_type = "min", minimum_ratio 
   statistics_table$parent_id <- "NA"
   log_con <- file(paste0("lulu.log_", format(start.time, "%Y%m%d_%H%M%S")),
                   open = "a")
+  # make a progressline
+  pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
+                     max = nrow(statistics_table), # Maximum value of the progress bar
+                     style = 3,    # Progress bar style (also available style = 1 and style = 2)
+                     width = 50,   # Progress bar width. Defaults to getOption("width")
+                     char = "=")   # Character used to create the bar
   for (line in seq(1:nrow(statistics_table))) {
-    # make a progressline
-    print(paste0("progress: ",
-                 round(((line/nrow(statistics_table)) * 100), 0), "%"))
+    setTxtProgressBar(pb, i)
     potential_parent_id <- row.names(otutable)[line]
     cat(paste0("\n", "####processing: ", potential_parent_id, " #####"),
         file = log_con)
