@@ -92,7 +92,7 @@ lulu <- function(otutable, matchlist, minimum_ratio_type = "min", minimum_ratio 
                      width = 50,   # Progress bar width. Defaults to getOption("width")
                      char = "=")   # Character used to create the bar
   for (line in seq(1:nrow(statistics_table))) {
-    setTxtProgressBar(pb, i)
+    setTxtProgressBar(pb, line)
     potential_parent_id <- row.names(otutable)[line]
     cat(paste0("\n", "####processing: ", potential_parent_id, " #####"),
         file = log_con)
