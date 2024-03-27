@@ -33,6 +33,8 @@
 #' @param minimum_relative_cooccurence minimum co-occurrence rate – i.e. the
 #'   lower rate of occurrence of the potential error explained by co-occurrence
 #'   with the potential parent for considering error state.
+#' @param progress_bar (Logical, default TRUE) print progress during the calculation or not.
+#' @param log_conserved (Logical, default FALSE) conserved log files writed in the disk
 #' @return Function \code{lulu} returns a list of results based on the input OTU
 #'   table and match list.
 #'   \enumerate{
@@ -60,7 +62,7 @@
 #'   Producing the match list requires a file with all the OTU sequences (centroids) - e.g. \code{OTUcentroids.fasta}. The matchlist can be produced by mapping all OTUs against each other with an external algorithm like VSEARCH or BLASTN. In \code{VSEARCH} a matchlist can be produced e.g. with the following command: \code{vsearch --usearch_global OTUcentroids.fasta --db OTUcentroids.fasta --strand plus --self --id .80 --iddef 1 --userout matchlist.txt --userfields query+target+id --maxaccepts 0 --query_cov .9 --maxhits 10}. In \code{BLASTN} a matchlist can be produces e.g. with the following commands. First we produce a blast-database from the fasta file: \code{makeblastdb -in OTUcentroids.fasta -parse_seqids -dbtype nucl}, then we match the centroids against that database: \code{blastn -db OTUcentoids.fasta -num_threads 10 -outfmt'6 qseqid sseqid pident' -out matchlist.txt -qcov_hsp_perc .90 -perc_identity .84 -query OTUcentroids.fasta}
 #' @author Tobias Guldberg Frøslev
 #' @export
-lulu <- function(otutable, matchlist, minimum_ratio_type = "min", minimum_ratio = 1, minimum_match = 84, minimum_relative_cooccurence = 0.95) {
+lulu <- function(otutable, matchlist, minimum_ratio_type = "min", minimum_ratio = 1, minimum_match = 84, minimum_relative_cooccurence = 0.95, progress_bar = TRUE, log_conserved = FALSE) {
   require(dplyr)
   start.time <- Sys.time()
   colnames(matchlist) <- c("OTUid", "hit", "match")
@@ -85,10 +87,16 @@ lulu <- function(otutable, matchlist, minimum_ratio_type = "min", minimum_ratio 
   statistics_table$parent_id <- "NA"
   log_con <- file(paste0("lulu.log_", format(start.time, "%Y%m%d_%H%M%S")),
                   open = "a")
+  # make a progressline
+  pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
+                     max = nrow(statistics_table), # Maximum value of the progress bar
+                     style = 3,    # Progress bar style (also available style = 1 and style = 2)
+                     width = 50,   # Progress bar width. Defaults to getOption("width")
+                     char = "=")   # Character used to create the bar
   for (line in seq(1:nrow(statistics_table))) {
-    # make a progressline
-    print(paste0("progress: ",
-                 round(((line/nrow(statistics_table)) * 100), 0), "%"))
+    if(progress_bar) {
+      setTxtProgressBar(pb, line)
+    }
     potential_parent_id <- row.names(otutable)[line]
     cat(paste0("\n", "####processing: ", potential_parent_id, " #####"),
         file = log_con)
@@ -187,7 +195,11 @@ lulu <- function(otutable, matchlist, minimum_ratio_type = "min", minimum_ratio 
                  otu_map = statistics_table,
                  original_table = otutable)
 
-  return(result)
+   if(!log_conserved) {
+     file.remove(list.files(pattern = "lulu.log_"))
+   }
+   return(result)
+                                           
 }
 
 

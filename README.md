@@ -97,7 +97,7 @@ ___
 The lulu package can be installed in **R (RStudio)** using **devtools**, by typing these commands in **R**
 ```
 > library(devtools)
-> install_github("tobiasgf/lulu")  
+> install_github("adrientaudiere/lulu")  
 ```
 
 ## The algorithm
